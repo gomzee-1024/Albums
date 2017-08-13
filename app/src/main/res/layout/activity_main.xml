@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_coordinator"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.design.widget.AppBarLayout
+        android:id="@+id/app_bar_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <android.support.design.widget.CollapsingToolbarLayout
+            android:id="@+id/collapsing_toolbar_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:collapsedTitleTextAppearance="@style/ToolbarTitleText"
+            app:layout_scrollFlags="scroll|enterAlways|snap"
+            app:title="@string/app_name">
+
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/tool_bar"
+                android:layout_width="match_parent"
+                android:layout_height="?android:attr/actionBarSize"
+                app:contentInsetLeft="0dp"
+                app:contentInsetStart="0dp"
+                app:layout_collapseMode="pin">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/profile_pic_view_main"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginLeft="8dp"
+                        android:src="@drawable/ic_account_circle_grey_300_24dp"
+                        android:layout_gravity="center_vertical"
+                        android:padding="4dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="Gallery"
+                        android:textAppearance="@style/ToolbarTitleText" />
+                    <ImageView
+                        android:id="@+id/search_icon"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginRight="48dp"
+                        android:scaleType="center"
+                        android:layout_gravity="center_vertical|right"
+                        android:src="@drawable/ic_search_black_24dp"/>
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center_vertical|right">
+                        <ImageView
+                            android:id="@+id/friend_requests"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/ic_people_outline_black_24dp"
+                            android:scaleType="center"/>
+                        <FrameLayout
+                            android:id="@+id/request_count_bubble"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_gravity="right"
+                            android:visibility="invisible"
+                            android:layout_margin="8dp">
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/ic_checkbox_blank_circle_1"/>
+                            <TextView
+                                android:id="@+id/friend_request_number"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="2+"
+                                android:textStyle="bold"
+                                android:textColor="@color/colorPrimary"
+                                android:textSize="9sp"/>
+                        </FrameLayout>
+                    </FrameLayout>
+                </FrameLayout>
+            </android.support.v7.widget.Toolbar>
+
+        </android.support.design.widget.CollapsingToolbarLayout>
+
+        <android.support.design.widget.TabLayout
+            android:id="@+id/tab_layout"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            app:layout_collapseMode="pin"
+            app:tabIndicatorColor="@color/colorAccent"
+            app:tabSelectedTextColor="@color/colorAccent"
+            app:tabTextColor="@color/colorDisabled" />
+
+    </android.support.design.widget.AppBarLayout>
+
+    <android.support.v4.view.ViewPager
+        android:id="@+id/view_pager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:layout_margin="16dp"
+        app:fabSize="normal"
+        android:src="@drawable/ic_add_white_24dp"/>
+
+</android.support.design.widget.CoordinatorLayout>

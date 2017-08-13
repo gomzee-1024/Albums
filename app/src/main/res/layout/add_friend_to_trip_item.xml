@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="72dp">
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/friend_profile_trip"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginLeft="16dp"
+        android:layout_gravity="center_vertical"
+        android:src="@drawable/ic_account_circle_grey_300_24dp"/>
+    <TextView
+        android:id="@+id/friend_name_trip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="72dp"
+        android:layout_gravity="center_vertical"
+        android:text="Gautam Kakadiya"
+        android:textSize="16sp"
+        android:textColor="@android:color/primary_text_light"/>
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="16dp"
+        android:layout_gravity="center|right"
+        android:checked="false"/>
+    <View
+        android:layout_width="match_parent"
+        android:layout_marginLeft="72dp"
+        android:layout_height="1dp"
+        android:layout_gravity="bottom"
+        android:background="@android:color/darker_gray"/>
+</FrameLayout>
