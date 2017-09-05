@@ -8,10 +8,19 @@ import java.util.List;
 
 public class Trip {
     private String id;
-    private boolean is_running;
+    private Boolean is_running;
     private String name;
     private String location;
     private String creator_id;
+    private String date;
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
 
     public String getId() {
         return id;
@@ -19,6 +28,14 @@ public class Trip {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Boolean getIs_running() {
+        return is_running;
+    }
+
+    public void setIs_running(Boolean is_running) {
+        this.is_running = is_running;
     }
 
     public String getName() {
@@ -43,13 +60,5 @@ public class Trip {
 
     public void setCreator_id(String creator_id) {
         this.creator_id = creator_id;
-    }
-
-    public boolean is_running() {
-        return is_running;
-    }
-
-    public void setIs_running(boolean is_running) {
-        this.is_running = is_running;
     }
 }

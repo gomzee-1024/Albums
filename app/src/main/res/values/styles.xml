@@ -9,6 +9,13 @@
     </style>
 
     <style name="AlbumTitleText" parent="@android:style/TextAppearance.Medium">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textColor">@color/colorAccent</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <style name="LabelTextTitle" parent="@android:style/TextAppearance.Medium">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/colorPrimary</item>
         <item name="android:fontFamily">sans-serif</item>
@@ -18,22 +25,39 @@
         <item name="android:textColor">@color/colorAccent</item>
         <item name="android:textSize">24sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:fontFamily">cursive</item>
+        <item name="android:fontFamily">monospace</item>
     </style>
 
     <style name="ImageActivityTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here. -->
-        <item name="android:windowFullscreen">true</item>
-        <item name="windowNoTitle">true</item>
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorAccent</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="SignInButtonText" parent="@android:style/TextAppearance.Medium">
+    <style name="SignInButtonText" parent="@android:style/TextAppearance.DeviceDefault">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/colorPrimary</item>
         <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <style name="TripLocationTextSyle" parent="@android:style/TextAppearance.DeviceDefault">
+        <item name="android:textSize">34sp</item>
+        <item name="android:textColor">@color/colorAccent</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TripDateTextSyle" parent="@android:style/TextAppearance.DeviceDefault">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">@color/colorAccent</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TripNameTextSyle" parent="@android:style/TextAppearance.WindowTitle">
+        <item name="android:textSize">45sp</item>
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:fontFamily">cursive</item>
+        <item name="android:textStyle">bold</item>
     </style>
 
     <style name="LoginSignUpActivityTheme" parent="Theme.AppCompat.Light.NoActionBar">

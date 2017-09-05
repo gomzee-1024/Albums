@@ -18,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.utils.gdkcorp.albums.Constants;
 import com.utils.gdkcorp.albums.R;
 import com.utils.gdkcorp.albums.activities.ImageViewActivity;
 import com.utils.gdkcorp.albums.adapters.AllPhotosAdapter;
@@ -122,8 +123,15 @@ public class Photos extends Fragment implements LoaderManager.LoaderCallbacks<Cu
     @Override
     public void onClick(View view, int position) {
         Intent intent = new Intent(view.getContext(),ImageViewActivity.class);
+        intent.setAction(Constants.ACTION.OFFLINE_IMAGE_ACTION);
         intent.putExtra(ImageViewActivity.BUNDLE_FOLDER_NAME_EXTRA_KEY,"null");
         intent.putExtra(ImageViewActivity.BUNDLE_IMAGE_POSITION_EXTRA_KEY,position);
         view.getContext().startActivity(intent);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mPhotosRecyclerView.setAdapter(null);
     }
 }

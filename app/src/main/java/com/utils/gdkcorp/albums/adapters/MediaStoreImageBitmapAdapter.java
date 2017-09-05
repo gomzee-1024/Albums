@@ -58,6 +58,12 @@ public class MediaStoreImageBitmapAdapter extends RecyclerView.Adapter<MediaStor
     }
 
     @Override
+    public void onViewRecycled(BitmapHolder holder) {
+        super.onViewRecycled(holder);
+        holder.photoBitmapView.setImageResource(R.drawable.ic_default_image);
+    }
+
+    @Override
     public int getItemCount() {
         return mMediaStoreImageBitmapCursor==null?0:mMediaStoreImageBitmapCursor.getCount();
     }

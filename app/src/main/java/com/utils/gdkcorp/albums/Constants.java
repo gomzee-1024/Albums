@@ -11,6 +11,8 @@ public class Constants {
         public static String STARTFOREGROUNG_JOIN_ACTION = "com.utils.gdkcorp.albums.jointrip";
         public static String STOPFOREGROUND_ACTION = "com.utils.gdkcorp.albums.stopforeground";
         public static final String STOPFOREGROUND_JOINED_ACTION = "com.utils.gdkcorp.albums.stopforegroundjoined";
+        public static final String OFFLINE_IMAGE_ACTION = "image_offline";
+        public static final String ONLINE_IMAGE_ACTION = "image_online";
     }
 
     public interface NOTIFICATION_ID {
@@ -41,6 +43,7 @@ public class Constants {
         public static final String TRIP_NAME_KEY = "trip_name";
         public static final String TRIP_LOCATION_KEY = "trip_location";
         public static final String TRIP_ID_KEY = "trip_id" ;
+        public static final String TRIP_IMAGE_POSITION = "image_position";
     }
 
     public interface FIREBASE_MESSAGING_SERVICE {
@@ -48,4 +51,38 @@ public class Constants {
         public static final String BASE_URL_NOTIFICATION_API = "https://fcm.googleapis.com/";
     }
 
+    public interface IMAGES_ASPECT_RATIO {
+        public static final double FOUR_TO_THREE_RATIO = 4.0/3.0;
+        public static final double SIXTEEN_TO_NINE_RATIO = 16.0/9.0;
+        public static final double ONE_TO_ONE_RATIO = 1.0;
+    }
+
+    public interface IMAGES_DIMENSION_ASPECT {
+        public static final int FOUR_TO_THREE_RATIO_WIDTH = 1040;
+        public static final int FOUR_TO_THREE_RATIO_HEIGHT = 780;
+        public static final int SIXTEEN_TO_NINE_RATIO_WIDTH = 1280;
+        public static final int SIXTEEN_TO_NINE_RATIO_HEIGHT = 675;
+        public static final int ONE_TO_ONE_RATIO_WIDTH = 1280;
+        public static final int ONE_TO_ONE_RATIO_HEIGHT = 1280;
+    }
+
+    public interface IMAGES_TYPE {
+        public static final int LANSCAPE_TYPE = 0;
+        public static final int PORTRAIT_TYPE = 1;
+    }
+
+    public interface DIRECTION {
+        int UP = 0;
+        int RIGHT = 1;
+        int DOWN = 2;
+        int LEFT = 3;
+    }
+
+    public interface FOLDERS {
+        String WHATSAPP = "WhatsApp Images";
+        String SCREENSHOTS = "Screenshots";
+        String SNAPSEED = "Snapseed";
+        String DOWNLOADS = "Download";
+        String CAMERA = "Camera";
+    }
 }

@@ -1,38 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     tools:context="com.utils.gdkcorp.albums.activities.TripAddFriendActivity">
-    <com.pchmn.materialchips.ChipsInput
-        android:id="@+id/chip_input"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="0.1"
-        app:hint="Enter a name"
-        app:chip_labelColor="@color/colorPrimary"
-        app:chip_hasAvatarIcon="true"
-        app:chip_backgroundColor="@color/colorAccent"
-        app:chip_deletable="true"
-        app:chip_deleteIconColor="@color/colorPrimary"
-        app:chip_detailed_textColor="@color/colorPrimary"
-        app:chip_detailed_backgroundColor="@color/colorAccent"
-        app:chip_detailed_deleteIconColor="@color/colorPrimary">
-    </com.pchmn.materialchips.ChipsInput>
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/friend_add_trip_rview"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight="0.8">
-    </android.support.v7.widget.RecyclerView>
+        android:orientation="vertical">
+        <com.pchmn.materialchips.ChipsInput
+            android:id="@+id/chip_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.1"
+            app:hint="Enter a name"
+            app:chip_labelColor="@color/colorPrimary"
+            app:chip_hasAvatarIcon="true"
+            app:chip_backgroundColor="@color/colorAccent"
+            app:chip_deletable="true"
+            app:chip_deleteIconColor="@color/colorPrimary"
+            app:chip_detailed_textColor="@color/colorPrimary"
+            app:chip_detailed_backgroundColor="@color/colorAccent"
+            app:chip_detailed_deleteIconColor="@color/colorPrimary">
+        </com.pchmn.materialchips.ChipsInput>
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/friend_add_trip_rview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="0.8">
+        </android.support.v7.widget.RecyclerView>
+    </LinearLayout>
     <Button
         android:id="@+id/apply"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@color/colorAccent"
         android:text="APPLY"
+        android:layout_gravity="bottom"
         android:textAppearance="@style/SignInButtonText"
         style="?android:attr/borderlessButtonStyle"/>
-</LinearLayout>
+</FrameLayout>

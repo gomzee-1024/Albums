@@ -6,11 +6,18 @@
     android:layout_height="match_parent"
     tools:context="com.utils.gdkcorp.albums.activities.ImageViewActivity">
     <com.utils.gdkcorp.albums.customviews.MyViewPager
+        android:visibility="gone"
         android:id="@+id/image_view_pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/colorPrimary">
     </com.utils.gdkcorp.albums.customviews.MyViewPager>
+    <android.support.v7.widget.RecyclerView
+        android:visibility="gone"
+        android:id="@+id/image_recycler_view_pager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </android.support.v7.widget.RecyclerView>
     <android.support.v7.widget.RecyclerView
         android:id="@+id/image_view_activity_rview"
         android:layout_width="match_parent"

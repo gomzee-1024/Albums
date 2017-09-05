@@ -60,6 +60,12 @@ public class AllPhotosAdapter extends RecyclerView.Adapter<AllPhotosAdapter.AllP
         return mMediaStoreImageBitmapCursor==null?0:mMediaStoreImageBitmapCursor.getCount();
     }
 
+    @Override
+    public void onViewRecycled(AllPhotosBitmapHolder holder) {
+        super.onViewRecycled(holder);
+        holder.cleanUp();
+    }
+
     public class AllPhotosBitmapHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
 
         private ImageView photoBitmapView;
@@ -73,6 +79,10 @@ public class AllPhotosAdapter extends RecyclerView.Adapter<AllPhotosAdapter.AllP
         @Override
         public void onClick(View view) {
             mAdapterClickListener.onClick(view,getLayoutPosition());
+        }
+
+        public void cleanUp(){
+            photoBitmapView.setImageDrawable(null);
         }
     }
 

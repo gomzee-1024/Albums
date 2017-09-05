@@ -68,7 +68,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                             ".\nPress Join button to join the trip")
                                     .setSmallIcon(R.drawable.ic_directions_bus_black_24dp)
                                     .setContentIntent(pendingIntent)
-                                    .setOngoing(true)
                                     .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                                     .setPriority(Notification.PRIORITY_MAX)
                                     .addAction(R.drawable.ic_stop_grey_500_24dp,

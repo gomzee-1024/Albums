@@ -55,7 +55,7 @@
                     android:layout_marginBottom="8dp"
                     android:layout_marginRight="16dp"
                     android:text="Friends"
-                    android:textAppearance="@style/AlbumTitleText" />
+                    android:textAppearance="@style/LabelTextTitle" />
             </LinearLayout>
             <ImageView
                 android:id="@+id/add_friend_to_trip"

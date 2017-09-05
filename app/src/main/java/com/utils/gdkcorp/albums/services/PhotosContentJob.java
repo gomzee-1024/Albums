@@ -11,14 +11,18 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
@@ -26,8 +30,12 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.utils.gdkcorp.albums.AsynkTasks.CompressUploadImageTask;
 import com.utils.gdkcorp.albums.Constants;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -125,11 +133,12 @@ public class PhotosContentJob extends JobService {
     @Override
     public boolean onStartJob(JobParameters params) {
         Log.i("PhotosContentJob", "JOB STARTED!");
+        String tripId=null;
         mRunningParams = params;
         if(mStoreRef==null && mDataRef==null){
             SharedPreferences preferences = this.getSharedPreferences(Constants.PREFERENCES.PREFERENCE_KEY,MODE_PRIVATE);
             String userId = preferences.getString(Constants.USER.USER_ID_PREFERENCE_KEY,null);
-            String tripId = preferences.getString(Constants.TRIP.TRIP_ID_PREFERENCE_KEY,null);
+            tripId = preferences.getString(Constants.TRIP.TRIP_ID_PREFERENCE_KEY,null);
             mDataRef = FirebaseDatabase.getInstance().getReference().child("trips").child(tripId).child("pictures");
             mStoreRef = FirebaseStorage.getInstance().getReference().child("pictures");
             mAuth = FirebaseAuth.getInstance();
@@ -195,23 +204,54 @@ public class PhotosContentJob extends JobService {
                                     String file_name_with_extension = Uri.parse(dir).getLastPathSegment();
                                     final String file_name = file_name_with_extension.substring(0,file_name_with_extension.length()-4);
                                     final Uri imageURI = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, Integer.toString(cursor.getInt(PROJECTION_ID)));
-                                    StorageReference ref = mStoreRef.child(file_name);
-                                    ref.putFile(imageURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                                        @Override
-                                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                                            Uri uri = taskSnapshot.getDownloadUrl();
-                                            DatabaseReference dataref = mDataRef.child(file_name);
-                                            dataref.child("picture_id").setValue(dataref.getKey());
-                                            dataref.child("picture_url").setValue(uri.toString());
-                                            dataref.child("taken_by").setValue(mAuth.getCurrentUser().getUid());
-                                            dataref.child("original_uri").setValue(dir.toString());
-                                            Toast.makeText(PhotosContentJob.this,"Image Uploaded",Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
+                                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),imageURI);
+                                    int original_height = bitmap.getHeight();
+                                    int original_width = bitmap.getWidth();
+                                    double aspect_ratio;
+                                    int bitmap_type=0;
+                                    if(original_width>=original_height) {
+                                        aspect_ratio = ((double) original_width / original_height);
+                                        bitmap_type = Constants.IMAGES_TYPE.LANSCAPE_TYPE;
+                                    }else{
+                                        aspect_ratio = ((double) original_height / original_width);
+                                        bitmap_type = Constants.IMAGES_TYPE.PORTRAIT_TYPE;
+                                    }
+                                    CompressUploadImageTask task = new CompressUploadImageTask(bitmap,file_name,dir,bitmap_type,tripId);
+                                    Log.i("PhotoContentJob","aspect_ratio "+aspect_ratio);
+                                    if(aspect_ratio==Constants.IMAGES_ASPECT_RATIO.FOUR_TO_THREE_RATIO){
+                                        Log.i("PhotoContentJob","case 0");
+                                        task.execute(0);
+                                    }else if(aspect_ratio==Constants.IMAGES_ASPECT_RATIO.SIXTEEN_TO_NINE_RATIO){
+                                        Log.i("PhotoContentJob","case 1");
+                                        task.execute(1);
+                                    }else if(aspect_ratio==Constants.IMAGES_ASPECT_RATIO.ONE_TO_ONE_RATIO){
+                                        Log.i("PhotoContentJob","case 2");
+                                        task.execute(2);
+                                    }else{
+                                        Log.i("PhotoContentJob","case 3");
+                                        task.execute(3);
+                                    }
+//                                    StorageReference ref = mStoreRef.child(file_name);
+//                                    ref.putFile(imageURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+//                                        @Override
+//                                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+//                                            Uri uri = taskSnapshot.getDownloadUrl();
+//                                            DatabaseReference dataref = mDataRef.child(file_name);
+//                                            dataref.child("picture_id").setValue(dataref.getKey());
+//                                            dataref.child("picture_url").setValue(uri.toString());
+//                                            dataref.child("taken_by").setValue(mAuth.getCurrentUser().getUid());
+//                                            dataref.child("original_uri").setValue(dir.toString());
+//                                            Toast.makeText(PhotosContentJob.this,"Image Uploaded",Toast.LENGTH_SHORT).show();
+//                                        }
+//                                    });
                                 }
                             }
                         } catch (SecurityException e) {
                             sb.append("Error: no access to media!");
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         } finally {
                             if (cursor != null) {
                                 cursor.close();
@@ -239,6 +279,8 @@ public class PhotosContentJob extends JobService {
         jobFinished(mRunningParams, false);
         return true;
     }
+
+
 
     @Override
     public boolean onStopJob(JobParameters params) {

@@ -21,6 +21,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 import com.utils.gdkcorp.albums.R;
 import com.utils.gdkcorp.albums.models.User;
@@ -29,7 +31,9 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 public class SearchFriendActivity extends AppCompatActivity implements View.OnClickListener {
     private RecyclerView mFriendRview;
-    private DatabaseReference mDataRef;
+    private DatabaseReference mUsersDataRef;
+    private DatabaseReference mFriendsDataRef;
+    private DatabaseReference mFriendRequestDataRef;
     private EditText mEditTextSearch;
     private String mSearchInput;
     private ImageView mClearEditTextView;
@@ -39,13 +43,15 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_friend);
+        mAuth =FirebaseAuth.getInstance();
         mClearEditTextView = (ImageView) findViewById(R.id.clear_search);
         mClearEditTextView.setVisibility(View.INVISIBLE);
         mClearEditTextView.setOnClickListener(this);
         mFriendRview = (RecyclerView) findViewById(R.id.friend_search_rview);
         mFriendRview.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.VERTICAL,false));
-        mDataRef = FirebaseDatabase.getInstance().getReference();
-        mAuth =FirebaseAuth.getInstance();
+        mUsersDataRef = FirebaseDatabase.getInstance().getReference().child("users");
+        mFriendsDataRef = FirebaseDatabase.getInstance().getReference().child("friends");
+        mFriendRequestDataRef = FirebaseDatabase.getInstance().getReference().child("friend_requests");
         mEditTextSearch = (EditText) findViewById(R.id.search_edit_text);
         mEditTextSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -72,16 +78,35 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
                             User.class,
                             R.layout.friend_search_item,
                             FriendHolder.class,
-                            mDataRef.child("users").orderByChild("name_lowercase").startAt(mSearchInput).endAt(mSearchInput+"~")
+                            mUsersDataRef.orderByChild("name_lowercase").startAt(mSearchInput).endAt(mSearchInput+"~")
                     ) {
                         @Override
-                        protected void populateViewHolder(final FriendHolder viewHolder, User model, int position) {
+                        protected void populateViewHolder(final FriendHolder viewHolder, final User model, int position) {
                             viewHolder.name.setText(model.getName());
                             viewHolder.user = model;
-                            Picasso.with(viewHolder.itemView.getContext()).load(model.getProfile_pic_url()).placeholder(R.drawable.ic_account_circle_grey_300_24dp).into(viewHolder.profileImageView);
-                            DatabaseReference ref = mDataRef.child("friends")
+                            Picasso
+                                    .with(viewHolder.itemView.getContext())
+                                    .load(model.getProfile_pic_url())
+                                    .networkPolicy(NetworkPolicy.OFFLINE)
+                                    .placeholder(R.drawable.ic_account_circle_grey_300_24dp)
+                                    .into(viewHolder.profileImageView, new Callback() {
+                                        @Override
+                                        public void onSuccess() {
+
+                                        }
+
+                                        @Override
+                                        public void onError() {
+                                            Picasso
+                                                    .with(viewHolder.itemView.getContext())
+                                                    .load(model.getProfile_pic_url())
+                                                    .placeholder(R.drawable.ic_account_circle_grey_300_24dp)
+                                                    .into(viewHolder.profileImageView);
+                                        }
+                                    });
+                            DatabaseReference ref = mFriendsDataRef
                                     .child(mAuth.getCurrentUser().getUid()).child(model.getUser_id());
-                            final DatabaseReference ref1 = mDataRef.child("friend_requests")
+                            final DatabaseReference ref1 = mFriendRequestDataRef
                                     .child(model.getUser_id()).child(mAuth.getCurrentUser().getUid());
 
                             ref.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -118,6 +143,12 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
                                 }
                             });
                         }
+
+                        @Override
+                        public void onViewRecycled(FriendHolder holder) {
+                            super.onViewRecycled(holder);
+                            holder.cleanUp();
+                        }
                     };
 
                     mFriendRview.setAdapter(firebaseRecyclerAdapter);
@@ -140,12 +171,12 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
         TextView name;
         Button addFriendButton;
         User user;
-        DatabaseReference mRef;
+        DatabaseReference mFriendRequestDataRef;
         FirebaseAuth mAuth;
         public FriendHolder(View itemView) {
             super(itemView);
             mAuth = FirebaseAuth.getInstance();
-            mRef = FirebaseDatabase.getInstance().getReference();
+            mFriendRequestDataRef = FirebaseDatabase.getInstance().getReference().child("friend_requests");
             profileImageView = (CircleImageView) itemView.findViewById(R.id.friend_profile_image_view);
             name = (TextView) itemView.findViewById(R.id.friend_name);
             addFriendButton = (Button) itemView.findViewById(R.id.send_request_button);
@@ -154,12 +185,19 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
 
         @Override
         public void onClick(View view) {
-            DatabaseReference ref = mRef.child("friend_requests").child(user.getUser_id()).child(mAuth.getCurrentUser().getUid());
+            DatabaseReference ref = mFriendRequestDataRef.child(user.getUser_id()).child(mAuth.getCurrentUser().getUid());
             ref.child("user_id").setValue(mAuth.getCurrentUser().getUid());
             addFriendButton.setText("SENT");
             addFriendButton.setTextColor(Color.BLACK);
             addFriendButton.setBackground(view.getContext().getDrawable(R.drawable.button_background_disabled));
             addFriendButton.setEnabled(false);
+        }
+
+        public void cleanUp(){
+            Picasso.with(itemView.getContext())
+                    .cancelRequest(profileImageView);
+            profileImageView.setImageDrawable(null);
+            user = null;
         }
     }
 }

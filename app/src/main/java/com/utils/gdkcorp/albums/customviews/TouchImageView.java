@@ -29,6 +29,8 @@ import android.widget.ImageView;
 import android.widget.OverScroller;
 import android.widget.Scroller;
 
+import com.utils.gdkcorp.albums.activities.ImageViewActivity;
+
 public class TouchImageView extends android.support.v7.widget.AppCompatImageView {
 
     private static final String DEBUG = "DEBUG";
@@ -88,6 +90,8 @@ public class TouchImageView extends android.support.v7.widget.AppCompatImageView
     private GestureDetector.OnDoubleTapListener doubleTapListener = null;
     private OnTouchListener userTouchListener = null;
     private OnTouchImageViewListener touchImageViewListener = null;
+    private TouchImageViewResetZoom mlistener;
+    private SingleTapListener mSingleTapListener;
 
     public TouchImageView(Context context) {
         super(context);
@@ -102,6 +106,14 @@ public class TouchImageView extends android.support.v7.widget.AppCompatImageView
     public TouchImageView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         sharedConstructing(context);
+    }
+
+    public void setOnResetZoomListener(TouchImageViewResetZoom listener){
+        mlistener = listener;
+    }
+
+    public void setOnSingleTapListener(SingleTapListener listener) {
+        mSingleTapListener = listener;
     }
 
     private void sharedConstructing(Context context) {
@@ -331,6 +343,9 @@ public class TouchImageView extends android.support.v7.widget.AppCompatImageView
      */
     public void resetZoom() {
         normalizedScale = 1;
+        if(mlistener!=null) {
+            mlistener.onZoomReset("resetZoom");
+        }
         fitImageToView();
     }
 
@@ -740,6 +755,9 @@ public class TouchImageView extends android.support.v7.widget.AppCompatImageView
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e)
         {
+            if(mSingleTapListener!=null) {
+                mSingleTapListener.onSingleTap();
+            }
             if(doubleTapListener != null) {
                 return doubleTapListener.onSingleTapConfirmed(e);
             }
@@ -775,6 +793,13 @@ public class TouchImageView extends android.support.v7.widget.AppCompatImageView
             }
             if (state == State.NONE) {
                 float targetZoom = (normalizedScale == minScale) ? maxScale : minScale;
+                if(mlistener!=null) {
+                    if (targetZoom != minScale) {
+                        mlistener.onZoom("GestureListener onDoubleTap");
+                    } else {
+                        mlistener.onZoomReset("GestureListener onDoubleTap");
+                    }
+                }
                 DoubleTapZoom doubleTap = new DoubleTapZoom(targetZoom, e.getX(), e.getY(), false);
                 compatPostOnAnimation(doubleTap);
                 consumed = true;
@@ -909,6 +934,13 @@ public class TouchImageView extends android.support.v7.widget.AppCompatImageView
                 DoubleTapZoom doubleTap = new DoubleTapZoom(targetZoom, viewWidth / 2, viewHeight / 2, true);
                 compatPostOnAnimation(doubleTap);
             }
+            if(mlistener!=null) {
+                if (normalizedScale < minScale) {
+                    mlistener.onZoomReset("onScaleEnd");
+                } else if (normalizedScale > minScale) {
+                    mlistener.onZoom("onScaleEnd");
+                }
+            }
         }
     }
 
@@ -936,6 +968,13 @@ public class TouchImageView extends android.support.v7.widget.AppCompatImageView
 
         matrix.postScale((float) deltaScale, (float) deltaScale, focusX, focusY);
         fixScaleTrans();
+        if(mlistener!=null) {
+            if (normalizedScale <= minScale) {
+                mlistener.onZoomReset("scaleImage");
+            } else if (normalizedScale > minScale) {
+                mlistener.onZoom("scaleImage");
+            }
+        }
     }
 
     /**
@@ -1259,5 +1298,14 @@ public class TouchImageView extends android.support.v7.widget.AppCompatImageView
         float[] n = new float[9];
         matrix.getValues(n);
         Log.d(DEBUG, "Scale: " + n[Matrix.MSCALE_X] + " TransX: " + n[Matrix.MTRANS_X] + " TransY: " + n[Matrix.MTRANS_Y]);
+    }
+
+    public interface TouchImageViewResetZoom {
+        public void onZoomReset(String where);
+        public void onZoom(String where);
+    }
+
+    public interface SingleTapListener {
+        public void onSingleTap();
     }
 }

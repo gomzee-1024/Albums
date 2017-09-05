@@ -1,15 +1,14 @@
 package com.utils.gdkcorp.albums.activities;
 
-import android.Manifest;
-import android.annotation.TargetApi;
 import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
-import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -23,7 +22,6 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -31,14 +29,14 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 import com.utils.gdkcorp.albums.fragments.Albums;
-import com.utils.gdkcorp.albums.fragments.BlankFragment;
-import com.utils.gdkcorp.albums.Constants;
+import com.utils.gdkcorp.albums.fragments.TripList;
 import com.utils.gdkcorp.albums.fragments.Photos;
 import com.utils.gdkcorp.albums.R;
 import com.utils.gdkcorp.albums.models.User;
-import com.utils.gdkcorp.albums.services.TripService;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -51,31 +49,82 @@ public class MainActivity extends AppCompatActivity implements Albums.OnFragment
     private MainPagerAdapter mPagerAdapter;
     private Albums mAlbums;
     private Photos mPhotos;
+    private TripList mTrips;
     private FloatingActionButton mFab;
     private FirebaseAuth mAuth;
     private FirebaseAuth.AuthStateListener mAuthSateListener;
     private ImageView searchIcon,friendRequest;
     private FrameLayout mRequestCountBubble;
     private TextView mRequestNumber;
-    private DatabaseReference mDataRef;
+    private DatabaseReference mDataFriendRequests;
+    private DatabaseReference mDataCurrentUsers;
     private CircleImageView mProfilePicView;
-    private static final int READ_EXTERNAL_STORAGE_PERMISSION_RESULT = 0;
+    private DatabaseReference mConnectedRef;
+    private CoordinatorLayout mRootLayout;
+    private boolean mConnected=false;
+    private ValueEventListener mConnectedListener;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mAuth = FirebaseAuth.getInstance();
+        mConnectedRef = FirebaseDatabase.getInstance().getReference(".info/connected");
         mAuthSateListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
                 if(firebaseAuth.getCurrentUser()==null){
                     Intent intent = new Intent(MainActivity.this,LogInSignUpActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
+                    finish();
                 }else{
-                    checkReadExternalStoragePermission();
+                    initUI();
+                    checkConnection();
                 }
             }
         };
+    }
+
+    private void checkConnection() {
+        mConnectedListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                boolean connected = dataSnapshot.getValue(Boolean.class);
+                if(!connected){
+                    mConnected = false;
+                    showDisconnectedSnackBar();
+                }else {
+                    if(!mConnected){
+                        mConnected = true;
+                        showConnectedSnackBar();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        mConnectedRef.addValueEventListener(mConnectedListener);
+    }
+
+    private void showConnectedSnackBar() {
+        Snackbar snackBar = Snackbar.make(mRootLayout,"Now you are Connected",Snackbar.LENGTH_SHORT);
+        View snackView = snackBar.getView();
+        snackView.setBackgroundColor(Color.GREEN);
+        TextView textView = (TextView) snackView.findViewById(R.id.snackbar_text);
+        textView.setTextColor(Color.BLACK);
+        snackBar.show();
+    }
+
+    private void showDisconnectedSnackBar() {
+        Snackbar snackBar = Snackbar.make(mRootLayout,"No Internet Connection!",Snackbar.LENGTH_INDEFINITE);
+        View snackView = snackBar.getView();
+        snackView.setBackgroundColor(Color.RED);
+        TextView textView = (TextView) snackView.findViewById(R.id.snackbar_text);
+        textView.setTextColor(Color.WHITE);
+        snackBar.show();
     }
 
     @Override
@@ -84,45 +133,49 @@ public class MainActivity extends AppCompatActivity implements Albums.OnFragment
         mAuth.addAuthStateListener(mAuthSateListener);
     }
 
-    private void checkReadExternalStoragePermission() {
-        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.M){
-            if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)==
-                    PackageManager.PERMISSION_GRANTED){
-                initUI();
-            }else{
-                if(shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)){
-                    Toast.makeText(this,"App. needs this permission to show photos",Toast.LENGTH_SHORT).show();
-                }
-                requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE},
-                        READ_EXTERNAL_STORAGE_PERMISSION_RESULT);
-            }
-        }else{
-            initUI();
-        }
-    }
-
-    @TargetApi(Build.VERSION_CODES.M)
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case READ_EXTERNAL_STORAGE_PERMISSION_RESULT:
-                if(grantResults[0]==PackageManager.PERMISSION_GRANTED){
-                    Toast.makeText(this,"Permission Granted",Toast.LENGTH_SHORT).show();
-                    initUI();
-                }else{
-                    Toast.makeText(this,"App. needs this permission to work",Toast.LENGTH_LONG).show();
-                    requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE},
-                            READ_EXTERNAL_STORAGE_PERMISSION_RESULT);
-                }
-                break;
-            default:
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-                break;
-        }
-    }
+//    private void checkReadExternalStoragePermission() {
+//        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.M){
+//            if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)==
+//                    PackageManager.PERMISSION_GRANTED){
+//                initUI();
+//            }else{
+//                if(shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)){
+//                    Toast.makeText(this,"App. needs this permission to show photos",Toast.LENGTH_SHORT).show();
+//                }
+//                requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE},
+//                        READ_EXTERNAL_STORAGE_PERMISSION_RESULT);
+//            }
+//        }else{
+//            initUI();
+//        }
+//    }
+//
+//    @TargetApi(Build.VERSION_CODES.M)
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        switch (requestCode) {
+//            case READ_EXTERNAL_STORAGE_PERMISSION_RESULT:
+//                if(grantResults[0]==PackageManager.PERMISSION_GRANTED){
+//                    Toast.makeText(this,"Permission Granted",Toast.LENGTH_SHORT).show();
+//                    initUI();
+//                }else{
+//                    Toast.makeText(this,"App. needs this permission to work",Toast.LENGTH_LONG).show();
+//                    requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE},
+//                            READ_EXTERNAL_STORAGE_PERMISSION_RESULT);
+//                }
+//                break;
+//            default:
+//            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//                break;
+//        }
+//    }
 
     private void initUI() {
-        mDataRef = FirebaseDatabase.getInstance().getReference();
+        mDataCurrentUsers = FirebaseDatabase.getInstance().getReference().child("users").child(mAuth.getCurrentUser().getUid());
+        mDataCurrentUsers.keepSynced(true);
+        mDataFriendRequests = FirebaseDatabase.getInstance().getReference().child("friend_requests").child(mAuth.getCurrentUser().getUid());
+        mDataFriendRequests.keepSynced(true);
+        mRootLayout = (CoordinatorLayout) findViewById(R.id.root_coordinator);
         mToolbar = (Toolbar) findViewById(R.id.tool_bar);
         mViewPager = (ViewPager) findViewById(R.id.view_pager);
         mTablayout = (TabLayout) findViewById(R.id.tab_layout);
@@ -137,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements Albums.OnFragment
         setSupportActionBar(mToolbar);
         mFab = (FloatingActionButton) findViewById(R.id.fab);
         mFab.setOnClickListener(this);
-        mDataRef.child("friend_requests").child(mAuth.getCurrentUser().getUid()).addValueEventListener(new ValueEventListener() {
+        mDataFriendRequests.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if(dataSnapshot.exists()){
@@ -161,6 +214,7 @@ public class MainActivity extends AppCompatActivity implements Albums.OnFragment
         });
         mAlbums = Albums.newInstance();
         mPhotos = Photos.newInstance();
+        mTrips = TripList.newInstance();
         mPagerAdapter = new MainPagerAdapter(getSupportFragmentManager());
         mViewPager.setAdapter(mPagerAdapter);
         mTablayout.setupWithViewPager(mViewPager);
@@ -199,11 +253,21 @@ public class MainActivity extends AppCompatActivity implements Albums.OnFragment
 
             }
         });
-        mDataRef.child("users").child(mAuth.getCurrentUser().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+        mDataCurrentUsers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                User user = dataSnapshot.getValue(User.class);
-                Picasso.with(MainActivity.this).load(user.getProfile_pic_url()).into(mProfilePicView);
+                final User user = dataSnapshot.getValue(User.class);
+                Picasso.with(MainActivity.this).load(user.getProfile_pic_url()).networkPolicy(NetworkPolicy.OFFLINE).into(mProfilePicView, new Callback() {
+                    @Override
+                    public void onSuccess() {
+
+                    }
+
+                    @Override
+                    public void onError() {
+                        Picasso.with(MainActivity.this).load(user.getProfile_pic_url()).into(mProfilePicView);
+                    }
+                });
             }
 
             @Override
@@ -246,7 +310,7 @@ public class MainActivity extends AppCompatActivity implements Albums.OnFragment
                     break;
                 case 1: curFragment = mPhotos;
                     break;
-                case 2: curFragment = BlankFragment.newInstance("","");
+                case 2: curFragment = mTrips;
                     break;
             }
             return curFragment;
@@ -259,4 +323,12 @@ public class MainActivity extends AppCompatActivity implements Albums.OnFragment
 
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mAuthSateListener!=null)
+        mAuth.removeAuthStateListener(mAuthSateListener);
+        if(mConnectedListener!=null)
+        mConnectedRef.removeEventListener(mConnectedListener);
+    }
 }

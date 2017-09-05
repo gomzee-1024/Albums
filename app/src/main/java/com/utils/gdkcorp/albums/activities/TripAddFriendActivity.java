@@ -22,6 +22,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.pchmn.materialchips.ChipsInput;
 import com.pchmn.materialchips.model.Chip;
 import com.pchmn.materialchips.model.ChipInterface;
+import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 import com.utils.gdkcorp.albums.R;
@@ -35,7 +36,7 @@ public class TripAddFriendActivity extends AppCompatActivity implements View.OnC
 
     private ChipsInput chipsInput;
     private Button applyButton;
-    private DatabaseReference mDataRef;
+    private DatabaseReference mCurrentFriendsDataRef;
     private RecyclerView mRecyclerView;
     private FirebaseAuth mAuth;
     private FirebaseRecyclerAdapter<User,FriendTripHolder> firebaseRecyclerAdapter;
@@ -43,8 +44,9 @@ public class TripAddFriendActivity extends AppCompatActivity implements View.OnC
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_trip_add_friend);
-        mDataRef = FirebaseDatabase.getInstance().getReference();
         mAuth = FirebaseAuth.getInstance();
+        mCurrentFriendsDataRef = FirebaseDatabase.getInstance().getReference().child("friends").child(mAuth.getCurrentUser().getUid());
+        mCurrentFriendsDataRef.keepSynced(true);
         chipsInput = (ChipsInput) findViewById(R.id.chip_input);
         applyButton = (Button) findViewById(R.id.apply);
         applyButton.setOnClickListener(this);
@@ -68,7 +70,7 @@ public class TripAddFriendActivity extends AppCompatActivity implements View.OnC
                             User.class,
                             R.layout.add_friend_to_trip_item,
                             FriendTripHolder.class,
-                            mDataRef.child("friends").child(mAuth.getCurrentUser().getUid())
+                            mCurrentFriendsDataRef
                     ) {
                         @Override
                         protected void populateViewHolder(FriendTripHolder viewHolder, final User model, int position) {
@@ -89,7 +91,7 @@ public class TripAddFriendActivity extends AppCompatActivity implements View.OnC
                             User.class,
                             R.layout.add_friend_to_trip_item,
                             FriendTripHolder.class,
-                            mDataRef.child("friends").child(mAuth.getCurrentUser().getUid())
+                            mCurrentFriendsDataRef
                                     .orderByChild("name_lowercase")
                                     .startAt(charSequence.toString())
                                     .endAt(charSequence.toString()+"~")
@@ -98,13 +100,37 @@ public class TripAddFriendActivity extends AppCompatActivity implements View.OnC
                         protected void populateViewHolder(final FriendTripHolder viewHolder, final User model, final int position) {
                             viewHolder.name.setText(model.getName());
                             viewHolder.friend = model;
-                            Picasso.with(viewHolder.mItemView.getContext()).load(model.getProfile_pic_url()).placeholder(R.drawable.ic_account_circle_grey_300_24dp).into(viewHolder.imageView);
+                            Picasso
+                                    .with(viewHolder.mItemView.getContext())
+                                    .load(model.getProfile_pic_url())
+                                    .placeholder(R.drawable.ic_account_circle_grey_300_24dp)
+                                    .into(viewHolder.imageView, new Callback() {
+                                        @Override
+                                        public void onSuccess() {
+
+                                        }
+
+                                        @Override
+                                        public void onError() {
+                                            Picasso
+                                                    .with(viewHolder.mItemView.getContext())
+                                                    .load(model.getProfile_pic_url())
+                                                    .placeholder(R.drawable.ic_account_circle_grey_300_24dp)
+                                                    .into(viewHolder.imageView);
+                                        }
+                                    });
                             viewHolder.mItemView.setOnClickListener(new View.OnClickListener() {
                                 @Override
                                 public void onClick(View view) {
                                     chipsInput.addChip(model);
                                 }
                             });
+                        }
+
+                        @Override
+                        public void onViewRecycled(FriendTripHolder holder) {
+                            super.onViewRecycled(holder);
+                            holder.cleanUp();
                         }
                     };
                     mRecyclerView.setAdapter(firebaseRecyclerAdapter);
@@ -143,6 +169,12 @@ public class TripAddFriendActivity extends AppCompatActivity implements View.OnC
             mItemView = itemView;
             imageView = (CircleImageView) itemView.findViewById(R.id.friend_profile_trip);
             name = (TextView) itemView.findViewById(R.id.friend_name_trip);
+        }
+
+        public void cleanUp(){
+            Picasso.with(itemView.getContext())
+                    .cancelRequest(imageView);
+            imageView.setImageDrawable(null);
         }
 
     }

@@ -4,11 +4,14 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.RingtoneManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.NotificationCompat;
@@ -24,6 +27,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 import com.utils.gdkcorp.albums.ApiInterfaces.SendNotificationApiInterface;
 import com.utils.gdkcorp.albums.ApiInterfaces.SubscriptionApiInterface;
+import com.utils.gdkcorp.albums.ApiInterfaces.UnSubscribeApiInterface;
 import com.utils.gdkcorp.albums.Constants;
 import com.utils.gdkcorp.albums.R;
 import com.utils.gdkcorp.albums.RequestDTO.DataBody;
@@ -33,8 +37,12 @@ import com.utils.gdkcorp.albums.ResponseDTO.SendMessageResponse;
 import com.utils.gdkcorp.albums.ResponseDTO.SubscriptionResponse;
 import com.utils.gdkcorp.albums.activities.MainActivity;
 import com.utils.gdkcorp.albums.models.User;
+import com.utils.gdkcorp.albums.receivers.CamaraPhotoReceiver;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -48,8 +56,11 @@ public class TripService extends Service {
     private String tripLocation;
     private ArrayList<User> mList;
     private Gson gson;
+    private ArrayList<String> rTokenList;
     public TripService() {
-        job = new PhotosContentJob();
+        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N) {
+            job = new PhotosContentJob();
+        }
         mDataRef = FirebaseDatabase.getInstance().getReference();
         gson = new Gson();
     }
@@ -98,12 +109,17 @@ public class TripService extends Service {
             ref.child("location").setValue(tripLocation);
             ref.child("creator_id").setValue(mAuth.getCurrentUser().getUid());
             ref.child("is_running").setValue(true);
+            Date date = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+            String mDate = dateFormat.format(date);
+            ref.child("date").setValue(mDate);
             DatabaseReference ref2 = mDataRef.child("user_trips").child(mAuth.getCurrentUser().getUid());
             ref2.child(ref.getKey()).setValue(ref.getKey());
             DatabaseReference ref1 = ref.child("friends");
             ref2 = mDataRef.child("user_trips");
             SubscriptionBody subscriptionBody = new SubscriptionBody();
-            ArrayList<String> rTokenList = new ArrayList<String>();
+            rTokenList = new ArrayList<String>();
+            ref1.child(mAuth.getCurrentUser().getUid()).setValue(mAuth.getCurrentUser().getUid());
             for(int i=0;i<mList.size();++i){
                 User user = mList.get(i);
                 ref1.child(user.getUser_id()).setValue(user.getUser_id());
@@ -156,20 +172,50 @@ public class TripService extends Service {
                     Log.i("TripService","Subscription failure");
                 }
             });
-            job.scheduleJob(this);
+            if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N) {
+                job.scheduleJob(this);
+            }else{
+                getPackageManager().setComponentEnabledSetting(new ComponentName(getApplicationContext(), CamaraPhotoReceiver.class), PackageManager.COMPONENT_ENABLED_STATE_ENABLED,PackageManager.DONT_KILL_APP);
+            }
         }else if(intent.getAction().equals(Constants.ACTION.STOPFOREGROUND_ACTION)){
             SharedPreferences preferences = this.getSharedPreferences(Constants.PREFERENCES.PREFERENCE_KEY,MODE_PRIVATE);
             String trip_id = preferences.getString(Constants.TRIP.TRIP_ID_PREFERENCE_KEY,null);
             mDataRef.child("trips").child(trip_id).child("is_running").setValue(false);
             stopForeground(true);
-            stopSelf();
-            job.cancelJob(this);
-            job.stopSelf();
+            SubscriptionBody subscriptionBody = new SubscriptionBody();
+            subscriptionBody.setTokens(rTokenList);
+            subscriptionBody.setTo("/topics/"+trip_id);
+            UnSubscribeApiInterface unSubscribeApiInterface = ApiService.getInstance().create(UnSubscribeApiInterface.class);
+            Call<SubscriptionResponse> subscriptionResponseCall = unSubscribeApiInterface.unSubscribeToTrip(subscriptionBody);
+            subscriptionResponseCall.enqueue(new Callback<SubscriptionResponse>() {
+                @Override
+                public void onResponse(Call<SubscriptionResponse> call, Response<SubscriptionResponse> response) {
+                    if(response.body().toString()!=null){
+                        Log.i("TripService","Unsubscribed");
+                        stopSelf();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<SubscriptionResponse> call, Throwable t) {
+
+                }
+            });
+            if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N) {
+                job.cancelJob(this);
+                job.stopSelf();
+            }else{
+                getPackageManager().setComponentEnabledSetting(new ComponentName(getApplicationContext(), CamaraPhotoReceiver.class), PackageManager.COMPONENT_ENABLED_STATE_DISABLED,PackageManager.DONT_KILL_APP);
+            }
         }else if(intent.getAction().equals(Constants.ACTION.STOPFOREGROUND_JOINED_ACTION)){
             stopForeground(true);
+            if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N) {
+                job.cancelJob(this);
+                job.stopSelf();
+            }else{
+                getPackageManager().setComponentEnabledSetting(new ComponentName(getApplicationContext(), CamaraPhotoReceiver.class), PackageManager.COMPONENT_ENABLED_STATE_DISABLED,PackageManager.DONT_KILL_APP);
+            }
             stopSelf();
-            job.cancelJob(this);
-            job.stopSelf();
         }else if(intent.getAction().equals(Constants.ACTION.STARTFOREGROUNG_JOIN_ACTION)){
             NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.cancel(Constants.NOTIFICATION_ID.JOIN_TRIP_NOTIFICATION_ID);
@@ -212,7 +258,11 @@ public class TripService extends Service {
                         editor.putString(Constants.TRIP.TRIP_NAME_PREFERENCE_KEY,trip_name);
                         editor.putString(Constants.TRIP.TRIP_LOCATION_PREFERENCE_KEY,trip_location);
                         editor.commit();
-                        job.scheduleJob(TripService.this);
+                        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N) {
+                            job.scheduleJob(TripService.this);
+                        }else{
+                            getPackageManager().setComponentEnabledSetting(new ComponentName(getApplicationContext(), CamaraPhotoReceiver.class), PackageManager.COMPONENT_ENABLED_STATE_ENABLED,PackageManager.DONT_KILL_APP);
+                        }
                     }
                 }
 

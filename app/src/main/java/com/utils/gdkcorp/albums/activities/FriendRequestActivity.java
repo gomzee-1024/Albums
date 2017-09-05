@@ -32,7 +32,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 public class FriendRequestActivity extends AppCompatActivity {
     private RecyclerView mFriendRequestRview;
-    private DatabaseReference mDataRef;
+    private DatabaseReference mDataFriendRequests;
     private ImageView mClearEditTextView;
     private FirebaseRecyclerAdapter<FriendRequest,FriendRequestHolder> firebaseRecyclerAdapter;
     private FirebaseAuth mAuth;
@@ -42,19 +42,19 @@ public class FriendRequestActivity extends AppCompatActivity {
         setContentView(R.layout.activity_friend_request);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        mDataRef = FirebaseDatabase.getInstance().getReference();
         mAuth = FirebaseAuth.getInstance();
+        mDataFriendRequests = FirebaseDatabase.getInstance().getReference().child("friend_requests").child(mAuth.getCurrentUser().getUid());
         mFriendRequestRview = (RecyclerView) findViewById(R.id.friend_requests_rview);
         mFriendRequestRview.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.VERTICAL,false));
         firebaseRecyclerAdapter = new FirebaseRecyclerAdapter<FriendRequest, FriendRequestHolder>(
                 FriendRequest.class,
                 R.layout.friend_request_item,
                 FriendRequestHolder.class,
-                mDataRef.child("friend_requests").child(mAuth.getCurrentUser().getUid())
+                mDataFriendRequests
         ) {
             @Override
             protected void populateViewHolder(final FriendRequestHolder viewHolder, final FriendRequest model, int position) {
-                DatabaseReference ref = mDataRef.child("users").child(model.getUser_id());
+                DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("users").child(model.getUser_id());
                 ref.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -86,7 +86,7 @@ public class FriendRequestActivity extends AppCompatActivity {
         public FriendRequestHolder(View itemView) {
             super(itemView);
             mAuth = FirebaseAuth.getInstance();
-            mRef = FirebaseDatabase.getInstance().getReference();
+            mRef = FirebaseDatabase.getInstance().getReference().child("friends");
             profileImageView = (CircleImageView) itemView.findViewById(R.id.friend_profile_image_view_request);
             name = (TextView) itemView.findViewById(R.id.friend_name_request);
             acceptFriendButton = (Button) itemView.findViewById(R.id.accept_request_button);
@@ -95,14 +95,14 @@ public class FriendRequestActivity extends AppCompatActivity {
 
         @Override
         public void onClick(View view) {
-            final DatabaseReference ref = mRef.child("friends").child(mAuth.getCurrentUser().getUid()).child(friend.getUser_id());
+            final DatabaseReference ref = mRef.child(mAuth.getCurrentUser().getUid()).child(friend.getUser_id());
             ref.child("user_id").setValue(friend.getUser_id());
             ref.child("name_lowercase").setValue(friend.getName_lowercase());
             ref.child("name").setValue(friend.getName());
             ref.child("profile_pic_url").setValue(friend.getProfile_pic_url());
             ref.child("registration_token").setValue(friend.getRegistration_token());
-            final DatabaseReference ref2 = mRef.child("friends").child(friend.getUser_id()).child(mAuth.getCurrentUser().getUid());
-            mRef.child("users").child(mAuth.getCurrentUser().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+            final DatabaseReference ref2 = mRef.child(friend.getUser_id()).child(mAuth.getCurrentUser().getUid());
+            FirebaseDatabase.getInstance().getReference().child("users").child(mAuth.getCurrentUser().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     User user = dataSnapshot.getValue(User.class);
@@ -118,7 +118,7 @@ public class FriendRequestActivity extends AppCompatActivity {
 
                 }
             });
-            DatabaseReference ref1 = mRef.child("friend_requests").child(mAuth.getCurrentUser().getUid());
+            DatabaseReference ref1 = FirebaseDatabase.getInstance().getReference().child("friend_requests").child(mAuth.getCurrentUser().getUid());
             ref1.child(friend.getUser_id()).removeValue();
             acceptFriendButton.setText("Accepted");
             acceptFriendButton.setTextColor(Color.BLACK);

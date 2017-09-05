@@ -13,16 +13,25 @@
         app:cardElevation="10dp"
         app:cardCornerRadius="1dp">
         <ImageView
+            android:id="@+id/profile_picture"
             android:layout_width="match_parent"
-            android:layout_height="186dp"
+            android:layout_height="248dp"
             android:src="@drawable/test2"
             android:scaleType="centerCrop"/>
+        <ImageView
+            android:id="@+id/add_profle_pic_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:background="#80FFFFFF"
+            android:layout_gravity="right"
+            android:src="@drawable/ic_account_box_black_24dp"/>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:padding="16dp"
             android:orientation="horizontal"
-            android:layout_marginTop="186dp">
+            android:layout_marginTop="248dp">
             <EditText
                 android:id="@+id/first_name"
                 android:layout_width="match_parent"
@@ -44,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:orientation="horizontal"
-            android:layout_marginTop="242dp">
+            android:layout_marginTop="304dp">
             <ImageView
                 android:layout_width="56dp"
                 android:layout_height="56dp"
@@ -62,7 +71,7 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:orientation="horizontal"
-            android:layout_marginTop="298dp">
+            android:layout_marginTop="360dp">
             <ImageView
                 android:layout_width="56dp"
                 android:layout_height="56dp"
@@ -81,7 +90,7 @@
             android:id="@+id/sign_up_button"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="354dp"
+            android:layout_marginTop="416dp"
             android:background="@color/colorAccent"
             android:text="SIGN UP"
             android:textAppearance="@style/SignInButtonText"
