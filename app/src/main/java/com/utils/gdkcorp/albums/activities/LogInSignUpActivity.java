@@ -116,11 +116,11 @@ public class LogInSignUpActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case EXTERNAL_STORAGE_PERMISSION_RESULT:
-                if(grantResults[0]==PackageManager.PERMISSION_GRANTED){
-                    Toast.makeText(this,"Permission Granted",Toast.LENGTH_SHORT).show();
+                if(grantResults[0]==PackageManager.PERMISSION_GRANTED && grantResults[1]==PackageManager.PERMISSION_GRANTED){
+                    Toast.makeText(this,"Permissions Granted",Toast.LENGTH_SHORT).show();
                     initUI();
                 }else{
-                    Toast.makeText(this,"App. needs this permission to work",Toast.LENGTH_LONG).show();
+                    Toast.makeText(this,"App. needs these permissions to work",Toast.LENGTH_LONG).show();
                     requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE},
                             EXTERNAL_STORAGE_PERMISSION_RESULT);
                 }
@@ -193,6 +193,6 @@ public class LogInSignUpActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-
+        finish();
     }
 }

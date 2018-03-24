@@ -5,15 +5,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -59,6 +63,9 @@ public class TripList extends Fragment {
     private DatabaseReference mTripsDataRef;
     private DatabaseReference mCurrentUserTripsDataRef;
     private FirebaseRecyclerAdapter<String,TripItemHolder> mAdapter;
+    private ProgressBar mProgressBar;
+    private LinearLayoutManager mLayoutManager;
+    private Parcelable mTripRViewState;
 
     public TripList() {
         // Required empty public constructor
@@ -71,22 +78,21 @@ public class TripList extends Fragment {
      * @return A new instance of fragment TripList.
      */
     // TODO: Rename and change types and number of parameters
-    public static TripList newInstance() {
+    public static TripList newInstance(Parcelable tripRviewState) {
         TripList fragment = new TripList();
-//        Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
-//        fragment.setArguments(args);
+        Bundle args = new Bundle();
+        args.putParcelable(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET, tripRviewState);
+        fragment.setArguments(args);
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        if (getArguments() != null) {
-//            mParam1 = getArguments().getString(ARG_PARAM1);
-//            mParam2 = getArguments().getString(ARG_PARAM2);
-//        }
+        if (getArguments() != null) {
+            Log.i("TripList","ArgumentsNotNull");
+            mTripRViewState = getArguments().getParcelable(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET);
+        }
     }
 
     @Override
@@ -103,8 +109,10 @@ public class TripList extends Fragment {
         mTripsDataRef = FirebaseDatabase.getInstance().getReference().child("trips");
         mCurrentUserTripsDataRef = FirebaseDatabase.getInstance().getReference().child("user_trips").child(user_id);
         mCurrentUserTripsDataRef.keepSynced(true);
+        mProgressBar = (ProgressBar) view.findViewById(R.id.trip_list_progess_bar);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.trip_list_rview);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(),LinearLayoutManager.VERTICAL,false));
+        mLayoutManager = new LinearLayoutManager(getContext().getApplicationContext(),LinearLayoutManager.VERTICAL,false);
+        mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.addItemDecoration(new MyItemDecoration((int)Utils.dipToPixels(getContext(),8f),Constants.DIRECTION.UP));
         mAdapter = new FirebaseRecyclerAdapter<String, TripItemHolder>(
                 String.class,
@@ -114,6 +122,9 @@ public class TripList extends Fragment {
         ) {
             @Override
             protected void populateViewHolder(final TripItemHolder viewHolder, final String model, int position) {
+                if(mProgressBar.getVisibility()==View.VISIBLE){
+                    mProgressBar.setVisibility(View.INVISIBLE);
+                }
                 viewHolder.mTripPhotoDataRef = mTripsDataRef.child(model);
                 viewHolder.mTripPhotoDataRef.keepSynced(true);
                 mTripsDataRef.child(model).addListenerForSingleValueEvent(new ValueEventListener() {
@@ -133,167 +144,8 @@ public class TripList extends Fragment {
                         SimpleDateFormat finalFormat = new SimpleDateFormat("dd/MM/yyyy");
                         String dateFinal = finalFormat.format(date);
                         viewHolder.mTripDate.setText(dateFinal);
-                        viewHolder.mTripPhotoDataRef.child("pictures").addValueEventListener(new ValueEventListener() {
-                            @Override
-                            public void onDataChange(DataSnapshot dataSnapshot) {
-                                if(dataSnapshot.getChildrenCount()>=3){
-                                    viewHolder.imageView1 = (ImageView) viewHolder.itemView.findViewById(R.id.trip_three_image_1);
-                                    viewHolder.imageView2 = (ImageView) viewHolder.itemView.findViewById(R.id.trip_three_image_2);
-                                    viewHolder.imageView3 = (ImageView) viewHolder.itemView.findViewById(R.id.trip_three_image_3);
-                                    Iterator<DataSnapshot> iterator = dataSnapshot.getChildren().iterator();
-                                    DataSnapshot dataSnapshot1 = iterator.next();
-                                    Photo picture = dataSnapshot1.getValue(Photo.class);
-                                    final Photo finalPicture = picture;
-                                    Picasso
-                                            .with(getContext())
-                                            .load(picture.getPicture_url())
-                                            .placeholder(R.drawable.ic_default_image)
-                                            .into(viewHolder.imageView1, new Callback() {
-                                                @Override
-                                                public void onSuccess() {
-
-                                                }
-
-                                                @Override
-                                                public void onError() {
-                                                    Picasso
-                                                            .with(getContext())
-                                                            .load(finalPicture.getPicture_url())
-                                                            .placeholder(R.drawable.ic_default_image)
-                                                            .into(viewHolder.imageView1);
-                                                }
-                                            });
-                                    dataSnapshot1 = iterator.next();
-                                    picture = dataSnapshot1.getValue(Photo.class);
-                                    final Photo finalPicture1 = picture;
-                                    Picasso
-                                            .with(getContext())
-                                            .load(picture.getPicture_url())
-                                            .placeholder(R.drawable.ic_default_image)
-                                            .into(viewHolder.imageView2, new Callback() {
-                                                @Override
-                                                public void onSuccess() {
-
-                                                }
-
-                                                @Override
-                                                public void onError() {
-                                                    Picasso
-                                                            .with(getContext())
-                                                            .load(finalPicture1.getPicture_url())
-                                                            .placeholder(R.drawable.ic_default_image)
-                                                            .into(viewHolder.imageView2);
-                                                }
-                                            });
-                                    dataSnapshot1 = iterator.next();
-                                    picture = dataSnapshot1.getValue(Photo.class);
-                                    final Photo finalPicture2 = picture;
-                                    Picasso
-                                            .with(getContext())
-                                            .load(picture.getPicture_url())
-                                            .placeholder(R.drawable.ic_default_image)
-                                            .into(viewHolder.imageView3, new Callback() {
-                                                @Override
-                                                public void onSuccess() {
-
-                                                }
-
-                                                @Override
-                                                public void onError() {
-                                                    Picasso
-                                                            .with(getContext())
-                                                            .load(finalPicture2.getPicture_url())
-                                                            .placeholder(R.drawable.ic_default_image)
-                                                            .into(viewHolder.imageView3);
-                                                }
-                                            });
-                                }else if(dataSnapshot.getChildrenCount()>=2){
-                                    viewHolder.mFormat3.setVisibility(View.GONE);
-                                    viewHolder.mFormat2.setVisibility(View.VISIBLE);
-                                    viewHolder.imageView1 = (ImageView) viewHolder.itemView.findViewById(R.id.trip_two_image_1);
-                                    viewHolder.imageView2 = (ImageView) viewHolder.itemView.findViewById(R.id.trip_two_image_2);
-                                    Iterator<DataSnapshot> iterator = dataSnapshot.getChildren().iterator();
-                                    DataSnapshot dataSnapshot1 = iterator.next();
-                                    Photo picture = dataSnapshot1.getValue(Photo.class);
-                                    final Photo finalPicture = picture;
-                                    Picasso
-                                            .with(getContext())
-                                            .load(picture.getPicture_url())
-                                            .placeholder(R.drawable.ic_default_image)
-                                            .into(viewHolder.imageView1, new Callback() {
-                                                @Override
-                                                public void onSuccess() {
-
-                                                }
-
-                                                @Override
-                                                public void onError() {
-                                                    Picasso
-                                                            .with(getContext())
-                                                            .load(finalPicture.getPicture_url())
-                                                            .placeholder(R.drawable.ic_default_image)
-                                                            .into(viewHolder.imageView1);
-                                                }
-                                            });
-                                    dataSnapshot1 = iterator.next();
-                                    picture = dataSnapshot1.getValue(Photo.class);
-                                    final Photo finalPicture1 = picture;
-                                    Picasso
-                                            .with(getContext())
-                                            .load(picture.getPicture_url())
-                                            .placeholder(R.drawable.ic_default_image)
-                                            .into(viewHolder.imageView2, new Callback() {
-                                                @Override
-                                                public void onSuccess() {
-
-                                                }
-
-                                                @Override
-                                                public void onError() {
-                                                    Picasso
-                                                            .with(getContext())
-                                                            .load(finalPicture1.getPicture_url())
-                                                            .placeholder(R.drawable.ic_default_image)
-                                                            .into(viewHolder.imageView2);
-                                                }
-                                            });
-                                }else if(dataSnapshot.getChildrenCount()>=1){
-                                    viewHolder.mFormat3.setVisibility(View.GONE);
-                                    viewHolder.mFormat1.setVisibility(View.VISIBLE);
-                                    viewHolder.imageView1 = (ImageView) viewHolder.itemView.findViewById(R.id.trip_one_image_1);
-                                    Iterator<DataSnapshot> iterator = dataSnapshot.getChildren().iterator();
-                                    DataSnapshot dataSnapshot1 = iterator.next();
-                                    final Photo picture = dataSnapshot1.getValue(Photo.class);
-                                    Picasso
-                                            .with(getContext())
-                                            .load(picture.getPicture_url())
-                                            .placeholder(R.drawable.ic_default_image)
-                                            .into(viewHolder.imageView1, new Callback() {
-                                                @Override
-                                                public void onSuccess() {
-
-                                                }
-
-                                                @Override
-                                                public void onError() {
-                                                    Picasso
-                                                            .with(getContext())
-                                                            .load(picture.getPicture_url())
-                                                            .placeholder(R.drawable.ic_default_image)
-                                                            .into(viewHolder.imageView1);
-                                                }
-                                            });
-                                }else{
-                                    viewHolder.mFormat3.setVisibility(View.GONE);
-                                    viewHolder.mNoImageLayout.setVisibility(View.VISIBLE);
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(DatabaseError databaseError) {
-
-                            }
-                        });
+                        viewHolder.setUpTripPhotosValueEventListener();
+                        viewHolder.mTripPhotoDataRef.child("pictures").addValueEventListener(viewHolder.mTripPhotosValueEventListener);
                         viewHolder.mTripFriendsDataRef = mTripsDataRef.child(model).child("friends");
                         viewHolder.mTripFriendsDataRef.keepSynced(true);
                         viewHolder.mChildFirebaseAdapter = new FirebaseRecyclerAdapter<String, TripItemHolder.FriendImageHolder>(
@@ -370,6 +222,12 @@ public class TripList extends Fragment {
             }
         };
         mRecyclerView.setAdapter(mAdapter);
+        new Handler().post(new Runnable() {
+            @Override
+            public void run() {
+                mRecyclerView.getLayoutManager().onRestoreInstanceState(mTripRViewState);
+            }
+        });
     }
 
     public static class TripItemHolder extends RecyclerView.ViewHolder{
@@ -382,6 +240,7 @@ public class TripList extends Fragment {
         RelativeLayout mFormat1,mFormat2,mFormat3;
         FirebaseRecyclerAdapter<String,FriendImageHolder> mChildFirebaseAdapter;
         DatabaseReference mTripPhotoDataRef,mTripFriendsDataRef;
+        ValueEventListener mTripPhotosValueEventListener;
         public TripItemHolder(View itemView) {
             super(itemView);
             mFriendsRecyclerView = (RecyclerView) itemView.findViewById(R.id.trip_item_friends_rview);
@@ -410,11 +269,206 @@ public class TripList extends Fragment {
             }
         }
 
-        public void cleanUp(){
-            imageView1.setImageDrawable(null);
-            imageView2.setImageDrawable(null);
-            imageView3.setImageDrawable(null);
-            mFriendsRecyclerView.setAdapter(null);
+        public void setUpTripPhotosValueEventListener(){
+            mTripPhotosValueEventListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if(dataSnapshot.getChildrenCount()>=3){
+                        mNoImageLayout.setVisibility(View.GONE);
+                        mFormat2.setVisibility(View.GONE);
+                        mFormat1.setVisibility(View.GONE);
+                        mFormat3.setVisibility(View.VISIBLE);
+                        imageView1 = (ImageView) itemView.findViewById(R.id.trip_three_image_1);
+                        imageView2 = (ImageView) itemView.findViewById(R.id.trip_three_image_2);
+                        imageView3 = (ImageView) itemView.findViewById(R.id.trip_three_image_3);
+                        Iterator<DataSnapshot> iterator = dataSnapshot.getChildren().iterator();
+                        DataSnapshot dataSnapshot1 = iterator.next();
+                        Photo picture = dataSnapshot1.getValue(Photo.class);
+                        final Photo finalPicture = picture;
+                        Picasso
+                                .with(itemView.getContext())
+                                .load(picture.getPicture_url())
+                                .placeholder(R.drawable.ic_default_image)
+                                .into(imageView1, new Callback() {
+                                    @Override
+                                    public void onSuccess() {
+
+                                    }
+
+                                    @Override
+                                    public void onError() {
+                                        Picasso
+                                                .with(itemView.getContext())
+                                                .load(finalPicture.getPicture_url())
+                                                .placeholder(R.drawable.ic_default_image)
+                                                .into(imageView1);
+                                    }
+                                });
+                        dataSnapshot1 = iterator.next();
+                        picture = dataSnapshot1.getValue(Photo.class);
+                        final Photo finalPicture1 = picture;
+                        Picasso
+                                .with(itemView.getContext())
+                                .load(picture.getPicture_url())
+                                .placeholder(R.drawable.ic_default_image)
+                                .into(imageView2, new Callback() {
+                                    @Override
+                                    public void onSuccess() {
+
+                                    }
+
+                                    @Override
+                                    public void onError() {
+                                        Picasso
+                                                .with(itemView.getContext())
+                                                .load(finalPicture1.getPicture_url())
+                                                .placeholder(R.drawable.ic_default_image)
+                                                .into(imageView2);
+                                    }
+                                });
+                        dataSnapshot1 = iterator.next();
+                        picture = dataSnapshot1.getValue(Photo.class);
+                        final Photo finalPicture2 = picture;
+                        Picasso
+                                .with(itemView.getContext())
+                                .load(picture.getPicture_url())
+                                .placeholder(R.drawable.ic_default_image)
+                                .into(imageView3, new Callback() {
+                                    @Override
+                                    public void onSuccess() {
+
+                                    }
+
+                                    @Override
+                                    public void onError() {
+                                        Picasso
+                                                .with(itemView.getContext())
+                                                .load(finalPicture2.getPicture_url())
+                                                .placeholder(R.drawable.ic_default_image)
+                                                .into(imageView3);
+                                    }
+                                });
+                    }else if(dataSnapshot.getChildrenCount()>=2){
+                        mNoImageLayout.setVisibility(View.GONE);
+                        mFormat1.setVisibility(View.GONE);
+                        mFormat3.setVisibility(View.GONE);
+                        mFormat2.setVisibility(View.VISIBLE);
+                        imageView1 = (ImageView) itemView.findViewById(R.id.trip_two_image_1);
+                        imageView2 = (ImageView) itemView.findViewById(R.id.trip_two_image_2);
+                        Iterator<DataSnapshot> iterator = dataSnapshot.getChildren().iterator();
+                        DataSnapshot dataSnapshot1 = iterator.next();
+                        Photo picture = dataSnapshot1.getValue(Photo.class);
+                        final Photo finalPicture = picture;
+                        Picasso
+                                .with(itemView.getContext())
+                                .load(picture.getPicture_url())
+                                .placeholder(R.drawable.ic_default_image)
+                                .into(imageView1, new Callback() {
+                                    @Override
+                                    public void onSuccess() {
+
+                                    }
+
+                                    @Override
+                                    public void onError() {
+                                        Picasso
+                                                .with(itemView.getContext())
+                                                .load(finalPicture.getPicture_url())
+                                                .placeholder(R.drawable.ic_default_image)
+                                                .into(imageView1);
+                                    }
+                                });
+                        dataSnapshot1 = iterator.next();
+                        picture = dataSnapshot1.getValue(Photo.class);
+                        final Photo finalPicture1 = picture;
+                        Picasso
+                                .with(itemView.getContext())
+                                .load(picture.getPicture_url())
+                                .placeholder(R.drawable.ic_default_image)
+                                .into(imageView2, new Callback() {
+                                    @Override
+                                    public void onSuccess() {
+
+                                    }
+
+                                    @Override
+                                    public void onError() {
+                                        Picasso
+                                                .with(itemView.getContext())
+                                                .load(finalPicture1.getPicture_url())
+                                                .placeholder(R.drawable.ic_default_image)
+                                                .into(imageView2);
+                                    }
+                                });
+                    }else if(dataSnapshot.getChildrenCount()>=1){
+                        mNoImageLayout.setVisibility(View.GONE);
+                        mFormat3.setVisibility(View.GONE);
+                        mFormat2.setVisibility(View.GONE);
+                        mFormat1.setVisibility(View.VISIBLE);
+                        imageView1 = (ImageView) itemView.findViewById(R.id.trip_one_image_1);
+                        Iterator<DataSnapshot> iterator = dataSnapshot.getChildren().iterator();
+                        DataSnapshot dataSnapshot1 = iterator.next();
+                        final Photo picture = dataSnapshot1.getValue(Photo.class);
+                        Picasso
+                                .with(itemView.getContext())
+                                .load(picture.getPicture_url())
+                                .placeholder(R.drawable.ic_default_image)
+                                .into(imageView1, new Callback() {
+                                    @Override
+                                    public void onSuccess() {
+
+                                    }
+
+                                    @Override
+                                    public void onError() {
+                                        Picasso
+                                                .with(itemView.getContext())
+                                                .load(picture.getPicture_url())
+                                                .placeholder(R.drawable.ic_default_image)
+                                                .into(imageView1);
+                                    }
+                                });
+                    }else{
+                        mFormat1.setVisibility(View.GONE);
+                        mFormat3.setVisibility(View.GONE);
+                        mFormat2.setVisibility(View.GONE);
+                        mNoImageLayout.setVisibility(View.VISIBLE);
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            };
         }
+
+        public void cleanUp(){
+            if(imageView1!=null)
+            imageView1.setImageDrawable(null);
+            if(imageView2!=null)
+            imageView2.setImageDrawable(null);
+            if(imageView3!=null)
+            imageView3.setImageDrawable(null);
+            if(mChildFirebaseAdapter!=null)
+            mChildFirebaseAdapter.cleanup();
+            if(mTripFriendsDataRef!=null){
+                mTripPhotoDataRef.child("pictures").removeEventListener(mTripPhotosValueEventListener);
+            }
+        }
+    }
+
+    public Parcelable getState(){
+        return mRecyclerView.getLayoutManager().onSaveInstanceState();
+    }
+
+    @Override
+    public void onDestroyView() {
+        mRecyclerView.setAdapter(null);
+        if(mAdapter!=null){
+            mAdapter.cleanup();
+        }
+        mAdapter=null;
+        super.onDestroyView();
     }
 }

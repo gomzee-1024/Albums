@@ -32,8 +32,7 @@
             android:id="@+id/trip_one_image_1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_default_image"/>
+            android:scaleType="centerCrop"/>
     </RelativeLayout>
     <RelativeLayout
         android:id="@+id/trip_two_relative_layout"
@@ -44,39 +43,35 @@
             android:id="@+id/trip_two_image_1"
             android:layout_width="164dp"
             android:layout_height="164dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_default_image"/>
+            android:scaleType="centerCrop"/>
         <ImageView
             android:id="@+id/trip_two_image_2"
             android:layout_width="match_parent"
             android:layout_height="164dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_default_image"
             android:layout_toRightOf="@+id/trip_two_image_1"/>
     </RelativeLayout>
     <RelativeLayout
         android:id="@+id/trip_three_relative_layout"
         android:layout_width="match_parent"
-        android:layout_height="164dp">
+        android:layout_height="164dp"
+        android:visibility="gone">
         <ImageView
             android:id="@+id/trip_three_image_1"
             android:layout_width="164dp"
             android:layout_height="164dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_default_image"/>
+            android:scaleType="centerCrop"/>
         <ImageView
             android:id="@+id/trip_three_image_2"
             android:layout_width="match_parent"
             android:layout_height="82dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_default_image"
             android:layout_toRightOf="@+id/trip_three_image_1"/>
         <ImageView
             android:id="@+id/trip_three_image_3"
             android:layout_width="match_parent"
             android:layout_height="82dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_default_image"
             android:layout_toRightOf="@+id/trip_three_image_1"
             android:layout_below="@+id/trip_three_image_2"/>
     </RelativeLayout>

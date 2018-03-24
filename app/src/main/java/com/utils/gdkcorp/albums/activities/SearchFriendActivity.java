@@ -29,7 +29,7 @@ import com.utils.gdkcorp.albums.models.User;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
-public class SearchFriendActivity extends AppCompatActivity implements View.OnClickListener {
+public class SearchFriendActivity extends AppCompatActivity {
     private RecyclerView mFriendRview;
     private DatabaseReference mUsersDataRef;
     private DatabaseReference mFriendsDataRef;
@@ -39,6 +39,8 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
     private ImageView mClearEditTextView;
     private FirebaseRecyclerAdapter<User,FriendHolder> firebaseRecyclerAdapter;
     private FirebaseAuth mAuth;
+    private View.OnClickListener mGenClickListener;
+    private TextWatcher mTextWatcher;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,14 +48,20 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
         mAuth =FirebaseAuth.getInstance();
         mClearEditTextView = (ImageView) findViewById(R.id.clear_search);
         mClearEditTextView.setVisibility(View.INVISIBLE);
-        mClearEditTextView.setOnClickListener(this);
+        setUpmGenClickListener();
+        mClearEditTextView.setOnClickListener(mGenClickListener);
         mFriendRview = (RecyclerView) findViewById(R.id.friend_search_rview);
-        mFriendRview.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.VERTICAL,false));
+        mFriendRview.setLayoutManager(new LinearLayoutManager(getApplicationContext(),LinearLayoutManager.VERTICAL,false));
         mUsersDataRef = FirebaseDatabase.getInstance().getReference().child("users");
         mFriendsDataRef = FirebaseDatabase.getInstance().getReference().child("friends");
         mFriendRequestDataRef = FirebaseDatabase.getInstance().getReference().child("friend_requests");
         mEditTextSearch = (EditText) findViewById(R.id.search_edit_text);
-        mEditTextSearch.addTextChangedListener(new TextWatcher() {
+        setUpmTextWatcher();
+        mEditTextSearch.addTextChangedListener(mTextWatcher);
+    }
+
+    private void setUpmTextWatcher() {
+        mTextWatcher = new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -154,25 +162,30 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
                     mFriendRview.setAdapter(firebaseRecyclerAdapter);
                 }
             }
-        });
+        };
     }
 
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()){
-            case R.id.clear_search : mEditTextSearch.setText("");
-                mClearEditTextView.setVisibility(View.INVISIBLE);
-                break;
-        }
+    private void setUpmGenClickListener() {
+        mGenClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                switch (view.getId()){
+                    case R.id.clear_search : mEditTextSearch.setText("");
+                        mClearEditTextView.setVisibility(View.INVISIBLE);
+                        break;
+                }
+            }
+        };
     }
 
-    public static class FriendHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public static class FriendHolder extends RecyclerView.ViewHolder {
         CircleImageView profileImageView;
         TextView name;
         Button addFriendButton;
         User user;
         DatabaseReference mFriendRequestDataRef;
         FirebaseAuth mAuth;
+        View.OnClickListener mClickListenerChild;
         public FriendHolder(View itemView) {
             super(itemView);
             mAuth = FirebaseAuth.getInstance();
@@ -180,17 +193,22 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
             profileImageView = (CircleImageView) itemView.findViewById(R.id.friend_profile_image_view);
             name = (TextView) itemView.findViewById(R.id.friend_name);
             addFriendButton = (Button) itemView.findViewById(R.id.send_request_button);
-            addFriendButton.setOnClickListener(this);
+            setUpmClickListenerChild();
+            addFriendButton.setOnClickListener(mClickListenerChild);
         }
 
-        @Override
-        public void onClick(View view) {
-            DatabaseReference ref = mFriendRequestDataRef.child(user.getUser_id()).child(mAuth.getCurrentUser().getUid());
-            ref.child("user_id").setValue(mAuth.getCurrentUser().getUid());
-            addFriendButton.setText("SENT");
-            addFriendButton.setTextColor(Color.BLACK);
-            addFriendButton.setBackground(view.getContext().getDrawable(R.drawable.button_background_disabled));
-            addFriendButton.setEnabled(false);
+        private void setUpmClickListenerChild() {
+            mClickListenerChild = new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    DatabaseReference ref = mFriendRequestDataRef.child(user.getUser_id()).child(mAuth.getCurrentUser().getUid());
+                    ref.child("user_id").setValue(mAuth.getCurrentUser().getUid());
+                    addFriendButton.setText("SENT");
+                    addFriendButton.setTextColor(Color.BLACK);
+                    addFriendButton.setBackground(view.getContext().getDrawable(R.drawable.button_background_disabled));
+                    addFriendButton.setEnabled(false);
+                }
+            };
         }
 
         public void cleanUp(){
@@ -199,5 +217,15 @@ public class SearchFriendActivity extends AppCompatActivity implements View.OnCl
             profileImageView.setImageDrawable(null);
             user = null;
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        mGenClickListener = null;
+        mFriendRview.setAdapter(null);
+        firebaseRecyclerAdapter.cleanup();
+        firebaseRecyclerAdapter=null;
+        mTextWatcher = null;
+        super.onDestroy();
     }
 }

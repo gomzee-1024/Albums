@@ -24,10 +24,8 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class ChipAdapter extends RecyclerView.Adapter<ChipAdapter.ChipHolder> {
 
     private ArrayList<User> mList;
-    private Context context;
     private ChipAdapterInterface mClickListener;
-    public ChipAdapter(Context context,ArrayList<User> list,ChipAdapterInterface clickListner){
-        this.context = context;
+    public ChipAdapter(ArrayList<User> list,ChipAdapterInterface clickListner){
         mList = list;
         mClickListener = clickListner;
     }
@@ -43,12 +41,18 @@ public class ChipAdapter extends RecyclerView.Adapter<ChipAdapter.ChipHolder> {
     public void onBindViewHolder(ChipHolder holder, int position) {
         holder.chipLabel.setText(mList.get(position).getLabel());
         holder.chipIcon.setImageDrawable(mList.get(position).getAvatarDrawable());
-        Picasso.with(context).load(mList.get(position).getProfile_pic_url()).placeholder(R.drawable.ic_account_circle_grey_300_24dp).into(holder.chipIcon);
+        Picasso.with(holder.itemView.getContext().getApplicationContext()).load(mList.get(position).getProfile_pic_url()).placeholder(R.drawable.ic_account_circle_grey_300_24dp).into(holder.chipIcon);
     }
 
     @Override
     public int getItemCount() {
         return mList.size();
+    }
+
+    @Override
+    public void onViewRecycled(ChipHolder holder) {
+        super.onViewRecycled(holder);
+        holder.cleanUp();
     }
 
     public void addAll(ArrayList<User> list){
@@ -78,23 +82,33 @@ public class ChipAdapter extends RecyclerView.Adapter<ChipAdapter.ChipHolder> {
         return mList;
     }
 
-    public class ChipHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    public class ChipHolder extends RecyclerView.ViewHolder{
 
         private User friend;
         private CircleImageView chipIcon;
         private TextView chipLabel;
         private ImageView removeButton;
+        private View.OnClickListener mClickListenerChild;
         public ChipHolder(View itemView) {
             super(itemView);
             chipIcon = (CircleImageView) itemView.findViewById(R.id.chip_icon);
             chipLabel = (TextView) itemView.findViewById(R.id.chip_label);
             removeButton = (ImageView) itemView.findViewById(R.id.chip_delete);
-            removeButton.setOnClickListener(this);
+            setUpmClisckListenerChild();
+            removeButton.setOnClickListener(mClickListenerChild);
         }
 
-        @Override
-        public void onClick(View view) {
-            mClickListener.onClickRemove(view,getAdapterPosition());
+        private void setUpmClisckListenerChild() {
+            mClickListenerChild = new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    mClickListener.onClickRemove(view,getAdapterPosition());
+                }
+            };
+        }
+
+        public void cleanUp(){
+            chipIcon.setImageDrawable(null);
         }
     }
     public interface ChipAdapterInterface{

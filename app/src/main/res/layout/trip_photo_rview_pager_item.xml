@@ -3,15 +3,18 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+    <com.utils.gdkcorp.albums.customviews.TouchImageView
+        android:id="@+id/touch_image_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible"
+        />
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:progressBackgroundTint="@color/colorAccent"
+        android:progressBackgroundTintMode="multiply"
+        android:progressBackgroundTint="@color/colorDisabled"
         />
-    <com.utils.gdkcorp.albums.customviews.TouchImageView
-        android:id="@+id/touch_image_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
 </FrameLayout>

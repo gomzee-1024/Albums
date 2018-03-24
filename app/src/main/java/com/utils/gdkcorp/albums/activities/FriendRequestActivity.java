@@ -45,7 +45,7 @@ public class FriendRequestActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mDataFriendRequests = FirebaseDatabase.getInstance().getReference().child("friend_requests").child(mAuth.getCurrentUser().getUid());
         mFriendRequestRview = (RecyclerView) findViewById(R.id.friend_requests_rview);
-        mFriendRequestRview.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.VERTICAL,false));
+        mFriendRequestRview.setLayoutManager(new LinearLayoutManager(getApplicationContext(),LinearLayoutManager.VERTICAL,false));
         firebaseRecyclerAdapter = new FirebaseRecyclerAdapter<FriendRequest, FriendRequestHolder>(
                 FriendRequest.class,
                 R.layout.friend_request_item,
@@ -70,19 +70,26 @@ public class FriendRequestActivity extends AppCompatActivity {
                     }
                 });
             }
+
+            @Override
+            public void onViewRecycled(FriendRequestHolder holder) {
+                super.onViewRecycled(holder);
+                holder.cleanUp();
+            }
         };
 
         mFriendRequestRview.setAdapter(firebaseRecyclerAdapter);
 
     }
 
-    public static class FriendRequestHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public class FriendRequestHolder extends RecyclerView.ViewHolder {
         CircleImageView profileImageView;
         TextView name;
         Button acceptFriendButton;
         User friend;
         DatabaseReference mRef;
         FirebaseAuth mAuth;
+        View.OnClickListener mClickListener;
         public FriendRequestHolder(View itemView) {
             super(itemView);
             mAuth = FirebaseAuth.getInstance();
@@ -90,40 +97,57 @@ public class FriendRequestActivity extends AppCompatActivity {
             profileImageView = (CircleImageView) itemView.findViewById(R.id.friend_profile_image_view_request);
             name = (TextView) itemView.findViewById(R.id.friend_name_request);
             acceptFriendButton = (Button) itemView.findViewById(R.id.accept_request_button);
-            acceptFriendButton.setOnClickListener(this);
+            setUpmClickListener();
+            acceptFriendButton.setOnClickListener(mClickListener);
         }
 
-        @Override
-        public void onClick(View view) {
-            final DatabaseReference ref = mRef.child(mAuth.getCurrentUser().getUid()).child(friend.getUser_id());
-            ref.child("user_id").setValue(friend.getUser_id());
-            ref.child("name_lowercase").setValue(friend.getName_lowercase());
-            ref.child("name").setValue(friend.getName());
-            ref.child("profile_pic_url").setValue(friend.getProfile_pic_url());
-            ref.child("registration_token").setValue(friend.getRegistration_token());
-            final DatabaseReference ref2 = mRef.child(friend.getUser_id()).child(mAuth.getCurrentUser().getUid());
-            FirebaseDatabase.getInstance().getReference().child("users").child(mAuth.getCurrentUser().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+        private void setUpmClickListener() {
+            mClickListener = new View.OnClickListener() {
                 @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    User user = dataSnapshot.getValue(User.class);
-                    ref2.child("user_id").setValue(user.getUser_id());
-                    ref2.child("name_lowercase").setValue(user.getName_lowercase());
-                    ref2.child("name").setValue(user.getName());
-                    ref2.child("profile_pic_url").setValue(user.getProfile_pic_url());
-                    ref2.child("registration_token").setValue(user.getRegistration_token());
-                }
+                public void onClick(View view) {
+                    final DatabaseReference ref = mRef.child(mAuth.getCurrentUser().getUid()).child(friend.getUser_id());
+                    ref.child("user_id").setValue(friend.getUser_id());
+                    ref.child("name_lowercase").setValue(friend.getName_lowercase());
+                    ref.child("name").setValue(friend.getName());
+                    ref.child("profile_pic_url").setValue(friend.getProfile_pic_url());
+                    ref.child("registration_token").setValue(friend.getRegistration_token());
+                    final DatabaseReference ref2 = mRef.child(friend.getUser_id()).child(mAuth.getCurrentUser().getUid());
+                    FirebaseDatabase.getInstance().getReference().child("users").child(mAuth.getCurrentUser().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            User user = dataSnapshot.getValue(User.class);
+                            ref2.child("user_id").setValue(user.getUser_id());
+                            ref2.child("name_lowercase").setValue(user.getName_lowercase());
+                            ref2.child("name").setValue(user.getName());
+                            ref2.child("profile_pic_url").setValue(user.getProfile_pic_url());
+                            ref2.child("registration_token").setValue(user.getRegistration_token());
+                        }
 
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
 
+                        }
+                    });
+                    DatabaseReference ref1 = FirebaseDatabase.getInstance().getReference().child("friend_requests").child(mAuth.getCurrentUser().getUid());
+                    ref1.child(friend.getUser_id()).removeValue();
+                    acceptFriendButton.setText("Accepted");
+                    acceptFriendButton.setTextColor(Color.BLACK);
+                    acceptFriendButton.setBackground(view.getContext().getApplicationContext().getDrawable(R.drawable.button_background_disabled));
                 }
-            });
-            DatabaseReference ref1 = FirebaseDatabase.getInstance().getReference().child("friend_requests").child(mAuth.getCurrentUser().getUid());
-            ref1.child(friend.getUser_id()).removeValue();
-            acceptFriendButton.setText("Accepted");
-            acceptFriendButton.setTextColor(Color.BLACK);
-            acceptFriendButton.setBackground(view.getContext().getDrawable(R.drawable.button_background_disabled));
+            };
         }
+
+        public void cleanUp(){
+            profileImageView.setImageDrawable(null);
+        }
+
     }
 
+    @Override
+    protected void onDestroy() {
+        mFriendRequestRview.setAdapter(null);
+        firebaseRecyclerAdapter.cleanup();
+        firebaseRecyclerAdapter=null;
+        super.onDestroy();
+    }
 }

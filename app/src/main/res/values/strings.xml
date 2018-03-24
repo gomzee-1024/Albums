@@ -5,4 +5,6 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_friend_request">FriendRequestActivity</string>
     <string name="title_activity_trip_photos">TripPhotos</string>
+    <string name="changeProfilePic">Change Profile Picture</string>
+    <string name="signOut">Sign Out</string>
 </resources>

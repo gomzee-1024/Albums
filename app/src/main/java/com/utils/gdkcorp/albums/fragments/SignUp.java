@@ -187,7 +187,7 @@ public class SignUp extends Fragment implements View.OnClickListener {
                                     ref.child("profile_pic_url").setValue(user.getProfile_pic_url());
                                     mProgress.dismiss();
                                     Intent intent = new Intent(getActivity(),MainActivity.class);
-                                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                    //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_NEW_TASK);
                                     startActivity(intent);
                                 }
                             });
@@ -195,7 +195,7 @@ public class SignUp extends Fragment implements View.OnClickListener {
                             ref.child("profile_pic_url").setValue(Constants.AVATAR.DEFAULT_AVATAR_URL);
                             mProgress.dismiss();
                             Intent intent = new Intent(getActivity(),MainActivity.class);
-                            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(intent);
                         }
 

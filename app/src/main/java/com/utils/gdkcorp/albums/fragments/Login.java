@@ -122,7 +122,7 @@ public class Login extends Fragment implements View.OnClickListener {
                         editor.putString(Constants.USER.USER_ID_PREFERENCE_KEY,mAuth.getCurrentUser().getUid());
                         editor.commit();
                         Intent intent = new Intent(getActivity(),MainActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
                     }else{
                         Toast.makeText(getActivity(),"Sign In Failed",Toast.LENGTH_SHORT).show();

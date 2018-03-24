@@ -207,6 +207,7 @@ public class TripService extends Service {
             }else{
                 getPackageManager().setComponentEnabledSetting(new ComponentName(getApplicationContext(), CamaraPhotoReceiver.class), PackageManager.COMPONENT_ENABLED_STATE_DISABLED,PackageManager.DONT_KILL_APP);
             }
+            stopSelf();
         }else if(intent.getAction().equals(Constants.ACTION.STOPFOREGROUND_JOINED_ACTION)){
             stopForeground(true);
             if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N) {
@@ -281,4 +282,10 @@ public class TripService extends Service {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    @Override
+    public void onDestroy() {
+        mList = null;
+        rTokenList = null;
+        super.onDestroy();
+    }
 }

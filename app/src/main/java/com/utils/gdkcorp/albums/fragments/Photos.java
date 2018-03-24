@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -14,6 +15,7 @@ import android.support.v4.content.Loader;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,7 +45,7 @@ public class Photos extends Fragment implements LoaderManager.LoaderCallbacks<Cu
     private AllPhotosAdapter mRecyclerViewAdapter;
     private RecyclerView mPhotosRecyclerView;
     private GridLayoutManager gridLayoutManager;
-
+    private Parcelable mRViewState;
     public Photos() {
         // Required empty public constructor
     }
@@ -55,12 +57,11 @@ public class Photos extends Fragment implements LoaderManager.LoaderCallbacks<Cu
      * @return A new instance of fragment Photos.
      */
     // TODO: Rename and change types and number of parameters
-    public static Photos newInstance() {
+    public static Photos newInstance(Parcelable photosRViewState) {
         Photos fragment = new Photos();
-//        Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
-//        fragment.setArguments(args);
+        Bundle args = new Bundle();
+        args.putParcelable(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET, photosRViewState);
+        fragment.setArguments(args);
         return fragment;
     }
 
@@ -68,8 +69,8 @@ public class Photos extends Fragment implements LoaderManager.LoaderCallbacks<Cu
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-//            mParam1 = getArguments().getString(ARG_PARAM1);
-//            mParam2 = getArguments().getString(ARG_PARAM2);
+            Log.i("Photos","ArgumentsNotNull");
+            mRViewState = getArguments().getParcelable(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET);
         }
     }
 
@@ -84,7 +85,7 @@ public class Photos extends Fragment implements LoaderManager.LoaderCallbacks<Cu
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mPhotosRecyclerView = (RecyclerView) view.findViewById(R.id.all_photos_rview);
-        mRecyclerViewAdapter = new AllPhotosAdapter(null,getActivity(),this);
+        mRecyclerViewAdapter = new AllPhotosAdapter(null,this);
         gridLayoutManager = new GridLayoutManager(getActivity(),4,LinearLayoutManager.VERTICAL,false);
         mPhotosRecyclerView.setLayoutManager(gridLayoutManager);
         mPhotosRecyclerView.setAdapter(mRecyclerViewAdapter);
@@ -104,7 +105,7 @@ public class Photos extends Fragment implements LoaderManager.LoaderCallbacks<Cu
                 MediaStore.Images.Media.DATE_TAKEN
         };
         String SELECTION = MediaStore.Images.Media.DATA + " like ? OR "+MediaStore.Images.Media.DATA + " like ?";
-        String[] SELECTION_ARGS = {"%.jpg","%.png"};
+        String[] SELECTION_ARGS = {"%.jp%g","%.png"};
         String SORT_ORDER = MediaStore.Images.Media.DATE_TAKEN + " DESC";
         Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
         return new CursorLoader(getActivity(),uri,PROJECTION,SELECTION,SELECTION_ARGS,SORT_ORDER);
@@ -112,12 +113,17 @@ public class Photos extends Fragment implements LoaderManager.LoaderCallbacks<Cu
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        mRecyclerViewAdapter.swapCursor(data);
+        if(mRecyclerViewAdapter!=null) {
+            mRecyclerViewAdapter.swapCursor(data);
+            gridLayoutManager.onRestoreInstanceState(mRViewState);
+        }
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        mRecyclerViewAdapter.swapCursor(null);
+        if(mRecyclerViewAdapter!=null) {
+            mRecyclerViewAdapter.swapCursor(null);
+        }
     }
 
     @Override
@@ -131,7 +137,15 @@ public class Photos extends Fragment implements LoaderManager.LoaderCallbacks<Cu
 
     @Override
     public void onDestroyView() {
+        if (mPhotosRecyclerView!=null) {
+            mPhotosRecyclerView.setAdapter(null);
+            mRecyclerViewAdapter.cleanUp();
+            mRecyclerViewAdapter=null;
+        }
         super.onDestroyView();
-        mPhotosRecyclerView.setAdapter(null);
+    }
+
+    public Parcelable getState(){
+        return gridLayoutManager.onSaveInstanceState();
     }
 }

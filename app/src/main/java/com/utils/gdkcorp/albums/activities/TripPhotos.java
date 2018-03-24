@@ -11,10 +11,15 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.target.Target;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -24,8 +29,8 @@ import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 import com.utils.gdkcorp.albums.Constants;
+import com.utils.gdkcorp.albums.GlideApp;
 import com.utils.gdkcorp.albums.R;
 import com.utils.gdkcorp.albums.models.Photo;
 import com.utils.gdkcorp.albums.models.Trip;
@@ -45,6 +50,10 @@ public class TripPhotos extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_trip_photos);
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        Constants.DISPLAY_WIDTH = metrics.widthPixels;
+        Constants.DISPLAY_HEIGHT = metrics.heightPixels;
         mToolbar= (Toolbar) findViewById(R.id.toolbar);
         mTripNameTextView = (TextView) findViewById(R.id.trip_name_text_view);
         setSupportActionBar(mToolbar);
@@ -64,7 +73,7 @@ public class TripPhotos extends AppCompatActivity {
             }
         });
         mRecyclerView = (RecyclerView) findViewById(R.id.trip_photos_rview);
-        mRecyclerView.setLayoutManager(new GridLayoutManager(this,4, LinearLayoutManager.VERTICAL,false));
+        mRecyclerView.setLayoutManager(new GridLayoutManager(getApplicationContext(),4, LinearLayoutManager.VERTICAL,false));
         mTripPhotosDataRef = FirebaseDatabase.getInstance().getReference().child("trips").child(mTridId).child("pictures");
         mTripPhotosDataRef.keepSynced(true);
 
@@ -77,29 +86,37 @@ public class TripPhotos extends AppCompatActivity {
             @Override
             protected void populateViewHolder(final TripPhotoHolder viewHolder, Photo model, final int position) {
                 viewHolder.photo = model;
-                Picasso
-                        .with(TripPhotos.this)
+//                Picasso
+//                        .with(getApplicationContext())
+//                        .load(viewHolder.photo.getPicture_url())
+//                        .networkPolicy(NetworkPolicy.OFFLINE)
+//                        .centerCrop()
+//                        .fit()
+//                        .into(viewHolder.mTripPhotoView, new Callback() {
+//                    @Override
+//                    public void onSuccess() {
+//
+//                    }
+//
+//                    @Override
+//                    public void onError() {
+//                        Picasso
+//                                .with(getApplicationContext())
+//                                .load(viewHolder.photo.getPicture_url())
+//                                .centerCrop()
+//                                .fit()
+//                                .placeholder(R.drawable.ic_default_image)
+//                                .into(viewHolder.mTripPhotoView);
+//                    }
+//                });
+                viewHolder.target = GlideApp
+                        .with(viewHolder.itemView.getContext().getApplicationContext())
+                        .asBitmap()
                         .load(viewHolder.photo.getPicture_url())
-                        .networkPolicy(NetworkPolicy.OFFLINE)
+                        .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                        .placeholder(R.drawable.ic_default_image)
                         .centerCrop()
-                        .fit()
-                        .into(viewHolder.mTripPhotoView, new Callback() {
-                    @Override
-                    public void onSuccess() {
-
-                    }
-
-                    @Override
-                    public void onError() {
-                        Picasso
-                                .with(TripPhotos.this)
-                                .load(viewHolder.photo.getPicture_url())
-                                .centerCrop()
-                                .fit()
-                                .placeholder(R.drawable.ic_default_image)
-                                .into(viewHolder.mTripPhotoView);
-                    }
-                });
+                        .into(viewHolder.mTripPhotoView);
                 viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -125,16 +142,28 @@ public class TripPhotos extends AppCompatActivity {
 
         private ImageView mTripPhotoView;
         private Photo photo;
+        private Target<Bitmap> target;
         public TripPhotoHolder(View itemView) {
             super(itemView);
             mTripPhotoView = (ImageView) itemView.findViewById(R.id.bitmap_image_view1);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams((Constants.DISPLAY_WIDTH-8)/4,(Constants.DISPLAY_WIDTH-8)/4);
+            params.setMargins(1,1,1,1);
+            mTripPhotoView.setLayoutParams(params);
         }
 
         public void cleanUp(){
-            Picasso.with(itemView.getContext())
-                    .cancelRequest(mTripPhotoView);
-            mTripPhotoView.setImageDrawable(null);
+//            Picasso.with(itemView.getContext())
+//                    .cancelRequest(mTripPhotoView);
+//            mTripPhotoView.setImageDrawable(null);
+            GlideApp.with(itemView.getContext().getApplicationContext()).clear(target);
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        mRecyclerView.setAdapter(null);
+        firebaseRecyclerAdapter.cleanup();
+        firebaseRecyclerAdapter=null;
+        super.onDestroy();
+    }
 }

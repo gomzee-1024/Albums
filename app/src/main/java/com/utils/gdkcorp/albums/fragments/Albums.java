@@ -1,9 +1,9 @@
 package com.utils.gdkcorp.albums.fragments;
 
-import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -17,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.utils.gdkcorp.albums.Constants;
 import com.utils.gdkcorp.albums.R;
 import com.utils.gdkcorp.albums.adapters.MediaStoreImageFolderAdapter;
 
@@ -41,9 +42,9 @@ public class Albums extends Fragment implements LoaderManager.LoaderCallbacks<Cu
     private RecyclerView mAlbumsRecyclerView;
     private MediaStoreImageFolderAdapter mRecyclerViewAdapter;
     private LinearLayoutManager layoutManager;
-
-    private OnFragmentInteractionListener mListener;
-
+    private Parcelable mainRecyclerScrollOffset;
+    private Parcelable[] childScrollState;
+    private int x;
     public Albums() {
         // Required empty public constructor
     }
@@ -55,22 +56,24 @@ public class Albums extends Fragment implements LoaderManager.LoaderCallbacks<Cu
      * @return A new instance of fragment Albums.
      */
     // TODO: Rename and change types and number of parameters
-    public static Albums newInstance() {
+    public static Albums newInstance(Parcelable mainRViewState,Parcelable[] childRViewState) {
         Albums fragment = new Albums();
-//        Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
-//        fragment.setArguments(args);
+        Bundle args = new Bundle();
+        args.putParcelable(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET, mainRViewState);
+        args.putParcelableArray(Constants.SHARE_DATA_KEYS.CHILD_RVIEW_OFFSET, childRViewState);
+        fragment.setArguments(args);
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        if (getArguments() != null) {
-//            mParam1 = getArguments().getString(ARG_PARAM1);
-//            mParam2 = getArguments().getString(ARG_PARAM2);
-//        }
+        Log.i("Albums","onCreate");
+        if (getArguments() != null) {
+            Log.i("Albums","ArgumentsNotNull");
+            mainRecyclerScrollOffset = getArguments().getParcelable(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET);
+            childScrollState = getArguments().getParcelableArray(Constants.SHARE_DATA_KEYS.CHILD_RVIEW_OFFSET);
+        }
     }
 
     @Override
@@ -83,30 +86,18 @@ public class Albums extends Fragment implements LoaderManager.LoaderCallbacks<Cu
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Log.i("Albums","onViewCreated");
+        if(savedInstanceState!=null) {
+            Log.i("Albums","savedInstanceStateNotNUll");
+            childScrollState = savedInstanceState.getParcelableArray(Constants.SHARE_DATA_KEYS.CHILD_RVIEW_OFFSET);
+            mainRecyclerScrollOffset = savedInstanceState.getParcelable(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET);
+        }
         mAlbumsRecyclerView = (RecyclerView) view.findViewById(R.id.albums_rview);
-        mRecyclerViewAdapter = new MediaStoreImageFolderAdapter(null,getActivity());
+        mRecyclerViewAdapter = new MediaStoreImageFolderAdapter(null,getActivity(), childScrollState);
         layoutManager = new LinearLayoutManager(getActivity(),LinearLayoutManager.VERTICAL,false);
         mAlbumsRecyclerView.setLayoutManager(layoutManager);
         mAlbumsRecyclerView.setAdapter(mRecyclerViewAdapter);
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -118,12 +109,12 @@ public class Albums extends Fragment implements LoaderManager.LoaderCallbacks<Cu
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         String[] projection = { "DISTINCT "+MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
+                MediaStore.Images.Media.BUCKET_ID,
                 MediaStore.Images.Media.DATE_ADDED
         };
         String GROUP_BY = "1) GROUP BY (1";
@@ -135,23 +126,34 @@ public class Albums extends Fragment implements LoaderManager.LoaderCallbacks<Cu
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        mRecyclerViewAdapter.swapCursor(data);
+        if(mRecyclerViewAdapter!=null) {
+            mRecyclerViewAdapter.swapCursor(data);
+        }
+        if(mainRecyclerScrollOffset!=null) {
+            layoutManager.onRestoreInstanceState(mainRecyclerScrollOffset);
+        }
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        mRecyclerViewAdapter.swapCursor(null);
+        if(mRecyclerViewAdapter!=null) {
+            mRecyclerViewAdapter.swapCursor(null);
+        }
     }
 
     @Override
     public void onDestroyView() {
+        Log.i("Albums","onDestroyView");
+        if(mAlbumsRecyclerView!=null) {
+            mAlbumsRecyclerView.setAdapter(null);
+        }
         super.onDestroyView();
-//        LoaderManager loaderManager = getActivity().getSupportLoaderManager();
-//        for(int i=0;i<mRecyclerViewAdapter.getItemCount();++i){
-//            loaderManager.destroyLoader(i);
-//        }
-//        loaderManager.destroyLoader(MEDIASTORE_LOADER_ID);
-        mAlbumsRecyclerView.setAdapter(null);
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.i("Albums","onDestroy");
+        super.onDestroy();
     }
 
     /**
@@ -167,5 +169,23 @@ public class Albums extends Fragment implements LoaderManager.LoaderCallbacks<Cu
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+    }
+
+    public Parcelable[] getChildScrollState(){
+        return mRecyclerViewAdapter.getScrollOffsetList();
+    }
+
+    public Parcelable getMainRecyclerScrollOffset(){
+        return layoutManager.onSaveInstanceState();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        Log.i("Albums","OnSaveInstanceState");
+        outState.putParcelableArray(Constants.SHARE_DATA_KEYS.CHILD_RVIEW_OFFSET,mRecyclerViewAdapter.getScrollOffsetList());
+        outState.putParcelable(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET,layoutManager.onSaveInstanceState());
+        super.onSaveInstanceState(outState);
+//        outState.putInt(Constants.SHARE_DATA_KEYS.MAIN_RVIEW_OFFSET,mainRecyclerScrollOffset);
+//        outState.putIntArray(Constants.SHARE_DATA_KEYS.CHILD_RVIEW_OFFSET,mRecyclerViewAdapter.getScrollOffsetList());
     }
 }

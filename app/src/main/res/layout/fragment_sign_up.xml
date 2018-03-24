@@ -11,7 +11,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|center_vertical"
         app:cardElevation="10dp"
-        app:cardCornerRadius="1dp">
+        app:cardCornerRadius="1dp"
+        app:cardBackgroundColor="@color/colorPrimary" >
         <ImageView
             android:id="@+id/profile_picture"
             android:layout_width="match_parent"

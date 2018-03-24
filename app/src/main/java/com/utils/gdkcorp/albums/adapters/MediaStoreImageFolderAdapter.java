@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
@@ -25,6 +26,8 @@ import com.utils.gdkcorp.albums.Constants;
 import com.utils.gdkcorp.albums.R;
 import com.utils.gdkcorp.albums.activities.ImageViewActivity;
 
+import java.util.ArrayList;
+
 import static com.utils.gdkcorp.albums.Constants.FOLDERS.CAMERA;
 import static com.utils.gdkcorp.albums.Constants.FOLDERS.DOWNLOADS;
 import static com.utils.gdkcorp.albums.Constants.FOLDERS.SCREENSHOTS;
@@ -35,14 +38,13 @@ import static com.utils.gdkcorp.albums.Constants.FOLDERS.WHATSAPP;
  * Created by Gautam Kakadiya on 24-07-2017.
  */
 
-public class MediaStoreImageFolderAdapter extends RecyclerView.Adapter<MediaStoreImageFolderAdapter.AlbumsHolder> {
+public class MediaStoreImageFolderAdapter extends CursorRecyclerViewAdapter<MediaStoreImageFolderAdapter.AlbumsHolder> {
 
-    public static final String BUCKET_DISPLAY_NAME_KEY_BUNDLE = "folder";
-    private Cursor mMediaStoreImageFolderCursor;
-    private Context context;
-    public MediaStoreImageFolderAdapter(Cursor cursor,Context context){
-        mMediaStoreImageFolderCursor = cursor;
-        this.context=context;
+    public final String BUCKET_DISPLAY_NAME_KEY_BUNDLE = "folder";
+    private Parcelable[] mScrollState;
+    public MediaStoreImageFolderAdapter(Cursor cursor,Context context,Parcelable[] offsets){
+        super(cursor,MediaStore.Images.Media.BUCKET_ID);
+        mScrollState = offsets;
     }
 
     @Override
@@ -53,32 +55,27 @@ public class MediaStoreImageFolderAdapter extends RecyclerView.Adapter<MediaStor
         return holder;
     }
 
-    @Override
-    public void onBindViewHolder(AlbumsHolder holder, int position) {
-        mMediaStoreImageFolderCursor.moveToPosition(position);
-        int titleIndex  = mMediaStoreImageFolderCursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME);
-        String folder = mMediaStoreImageFolderCursor.getString(titleIndex);
-        holder.albumTitle.setText(folder.toUpperCase());
-        switch (folder){
-            case WHATSAPP : holder.albumIcon.setImageResource(R.drawable.ic_whatsapp_icon);
-                break;
-            case CAMERA : holder.albumIcon.setImageResource(R.drawable.ic_camera_black_36dp);
-                break;
-            case SCREENSHOTS : holder.albumIcon.setImageResource(R.drawable.ic_fullscreen_black_36dp);
-                break;
-            case SNAPSEED : holder.albumIcon.setImageResource(R.drawable.ic_snap_seed);
-                break;
-            case DOWNLOADS : holder.albumIcon.setImageResource(R.drawable.ic_file_download_black_36dp);
-                break;
-            default: holder.albumIcon.setImageResource(R.drawable.ic_image_black_36dp);
-                break;
-        }
-        holder.initLoader(folder,position);
-    }
 
     @Override
-    public int getItemCount() {
-        return mMediaStoreImageFolderCursor==null?0:mMediaStoreImageFolderCursor.getCount();
+    public void onBindViewHolder(AlbumsHolder viewHolder, Cursor cursor,int position) {
+        int titleIndex  = cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME);
+        String folder = cursor.getString(titleIndex);
+        viewHolder.albumTitle.setText(folder.toUpperCase());
+        switch (folder){
+            case WHATSAPP : viewHolder.albumIcon.setImageResource(R.drawable.ic_whatsapp_icon);
+                break;
+            case CAMERA : viewHolder.albumIcon.setImageResource(R.drawable.ic_camera_black_36dp);
+                break;
+            case SCREENSHOTS : viewHolder.albumIcon.setImageResource(R.drawable.ic_fullscreen_black_36dp);
+                break;
+            case SNAPSEED : viewHolder.albumIcon.setImageResource(R.drawable.ic_snap_seed);
+                break;
+            case DOWNLOADS : viewHolder.albumIcon.setImageResource(R.drawable.ic_file_download_black_36dp);
+                break;
+            default: viewHolder.albumIcon.setImageResource(R.drawable.ic_image_black_36dp);
+                break;
+        }
+        viewHolder.initLoader(folder,position);
     }
 
     @Override
@@ -87,7 +84,23 @@ public class MediaStoreImageFolderAdapter extends RecyclerView.Adapter<MediaStor
         holder.cleanUp();
     }
 
-    public class AlbumsHolder extends RecyclerView.ViewHolder implements LoaderManager.LoaderCallbacks<Cursor>,MediaStoreImageBitmapAdapter.ImageBitMapAdapterClickListener{
+    @Override
+    public Cursor swapCursor(Cursor newCursor) {
+        if(newCursor==null){
+            mScrollState=null;
+        }else{
+            if( mScrollState==null) {
+                mScrollState = new Parcelable[newCursor.getCount()];
+            }else{
+                if(mScrollState.length!=newCursor.getCount()){
+                    mScrollState = new Parcelable[newCursor.getCount()];
+                }
+            }
+        }
+        return super.swapCursor(newCursor);
+    }
+
+    public class AlbumsHolder extends RecyclerView.ViewHolder implements LoaderManager.LoaderCallbacks<Cursor>{
 
         private TextView albumTitle;
         private ImageView albumIcon;
@@ -95,6 +108,8 @@ public class MediaStoreImageFolderAdapter extends RecyclerView.Adapter<MediaStor
         private MediaStoreImageBitmapAdapter mPhotoBitmapAdapter;
         private GridLayoutManager gridLayoutManager;
         private ProgressBar mProgressBar;
+        private MediaStoreImageBitmapAdapter.ImageBitMapAdapterClickListener mClickListener;
+        private int position=-1,lastPosition=-1;
 
         public AlbumsHolder(View itemView) {
             super(itemView);
@@ -102,10 +117,25 @@ public class MediaStoreImageFolderAdapter extends RecyclerView.Adapter<MediaStor
             albumIcon = (ImageView) itemView.findViewById(R.id.album_icon);
             mPhotoRecyclerView = (RecyclerView) itemView.findViewById(R.id.album_photos_rview);
             mProgressBar = (ProgressBar) itemView.findViewById(R.id.progess_bar_1);
-            gridLayoutManager = new GridLayoutManager(context,2, LinearLayoutManager.HORIZONTAL,false);
+            gridLayoutManager = new GridLayoutManager(itemView.getContext(),2, LinearLayoutManager.HORIZONTAL,false);
             mPhotoRecyclerView.setLayoutManager(gridLayoutManager);
-            mPhotoBitmapAdapter = new MediaStoreImageBitmapAdapter(null,context,this);
+            setUpmClickListener();
+            mPhotoBitmapAdapter = new MediaStoreImageBitmapAdapter(null,mClickListener);
             mPhotoRecyclerView.setAdapter(mPhotoBitmapAdapter);
+        }
+
+        private void setUpmClickListener() {
+            mClickListener = new MediaStoreImageBitmapAdapter.ImageBitMapAdapterClickListener() {
+                @Override
+                public void onClick(View view, int position) {
+                    Intent intent = new Intent(albumTitle.getContext(),ImageViewActivity.class);
+                    intent.setAction(Constants.ACTION.OFFLINE_IMAGE_ACTION);
+                    intent.putExtra(ImageViewActivity.BUNDLE_FOLDER_NAME_EXTRA_KEY,albumTitle.getText());
+                    intent.putExtra(ImageViewActivity.BUNDLE_IMAGE_POSITION_EXTRA_KEY,position);
+                    intent.putExtra(ImageViewActivity.BUNDLE_FOLDER_POSITION_EXTRA_KEY,getLayoutPosition());
+                    view.getContext().startActivity(intent);
+                }
+            };
         }
 
         public void initLoader(String folder,int position){
@@ -115,6 +145,8 @@ public class MediaStoreImageFolderAdapter extends RecyclerView.Adapter<MediaStor
 //                Log.i("ImageFolderAdapter","initLoader null");
                 Bundle bundle = new Bundle();
                 bundle.putString(BUCKET_DISPLAY_NAME_KEY_BUNDLE,folder);
+                lastPosition = this.position;
+                this.position = position;
                 ((FragmentActivity)itemView.getContext()).getSupportLoaderManager().initLoader(position, bundle, this);
 //            }else{
 //                Log.i("ImageFolderAdapter","initLoader starting");
@@ -143,48 +175,42 @@ public class MediaStoreImageFolderAdapter extends RecyclerView.Adapter<MediaStor
         @Override
         public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
             Log.i("ImageFolderAdapter","data "+data.getCount());
-            mPhotoBitmapAdapter.swapCursor(data);
-            mProgressBar.setVisibility(View.GONE);
-            mPhotoRecyclerView.setVisibility(View.VISIBLE);
+            if(getLayoutPosition()==loader.getId()) {
+                if(mPhotoBitmapAdapter!=null) {
+                    mPhotoBitmapAdapter.swapCursor(data);
+                }
+                //gridLayoutManager.scrollToPositionWithOffset(0,mScrollOffsetList[getLayoutPosition()]);
+                if(mScrollState[getLayoutPosition()]==null){
+                    Log.i("ImageFolderAdapter","state null");
+                }
+                gridLayoutManager.onRestoreInstanceState(mScrollState[getLayoutPosition()]);
+                mProgressBar.setVisibility(View.INVISIBLE);
+                mPhotoRecyclerView.setVisibility(View.VISIBLE);
+            }
         }
 
         @Override
         public void onLoaderReset(Loader<Cursor> loader) {
             Log.i("ImageFolderAdapter","Loader reset called");
-            mPhotoBitmapAdapter.swapCursor(null);
-            mPhotoRecyclerView.setVisibility(View.INVISIBLE);
-            mProgressBar.setVisibility(View.VISIBLE);
+            if(getLayoutPosition()==loader.getId()) {
+                mPhotoBitmapAdapter.swapCursor(null);
+                mPhotoRecyclerView.setVisibility(View.INVISIBLE);
+                mProgressBar.setVisibility(View.VISIBLE);
+            }
         }
 
-        @Override
-        public void onClick(View view, int position) {
-            Intent intent = new Intent(itemView.getContext(),ImageViewActivity.class);
-            intent.setAction(Constants.ACTION.OFFLINE_IMAGE_ACTION);
-            intent.putExtra(ImageViewActivity.BUNDLE_FOLDER_NAME_EXTRA_KEY,albumTitle.getText());
-            intent.putExtra(ImageViewActivity.BUNDLE_IMAGE_POSITION_EXTRA_KEY,position);
-            intent.putExtra(ImageViewActivity.BUNDLE_FOLDER_POSITION_EXTRA_KEY,getLayoutPosition());
-            view.getContext().startActivity(intent);
-        }
-
-        public void cleanUp(){
+        public void cleanUp() {
+            Log.i("ImageFolderAdapter","State Save");
+            mScrollState[getLayoutPosition()] = gridLayoutManager.onSaveInstanceState();
             mPhotoBitmapAdapter.swapCursor(null);
             albumIcon.setImageDrawable(null);
-            mPhotoRecyclerView.setAdapter(null);
             mPhotoRecyclerView.setVisibility(View.INVISIBLE);
             mProgressBar.setVisibility(View.VISIBLE);
         }
     }
 
-    public Cursor swapCursor(Cursor cursor){
-        if(mMediaStoreImageFolderCursor==cursor){
-            return null;
-        }else{
-            Cursor oldCursor = mMediaStoreImageFolderCursor;
-            mMediaStoreImageFolderCursor = cursor;
-            if(cursor!=null){
-                this.notifyDataSetChanged();
-            }
-            return oldCursor;
-        }
+    public Parcelable[] getScrollOffsetList(){
+        return mScrollState;
     }
+
 }

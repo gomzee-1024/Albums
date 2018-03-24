@@ -5,6 +5,10 @@ package com.utils.gdkcorp.albums;
  */
 
 public class Constants {
+
+    public static int DISPLAY_WIDTH;
+    public static int DISPLAY_HEIGHT;
+
     public interface ACTION {
         public static String MAIN_ACTION = "com.utils.gdkcorp.albums.main";
         public static String STARTFOREGROUND_ACTION = "com.utils.gdkcorp.albums.startforeground";
@@ -44,6 +48,8 @@ public class Constants {
         public static final String TRIP_LOCATION_KEY = "trip_location";
         public static final String TRIP_ID_KEY = "trip_id" ;
         public static final String TRIP_IMAGE_POSITION = "image_position";
+        String MAIN_RVIEW_OFFSET="main offset";
+        String CHILD_RVIEW_OFFSET="child offsets";
     }
 
     public interface FIREBASE_MESSAGING_SERVICE {
